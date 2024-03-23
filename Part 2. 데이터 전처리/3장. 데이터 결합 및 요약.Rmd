@@ -1,0 +1,187 @@
+---
+title: "3장. 데이터 결합 및 요약"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+### 1절. 데이터 결합
+
+#### 1. rbind
+
+※ 결합하는 데이터들의 열 이름과 개수가 동일해야함.
+
+```{r rbind}
+customer1 <- data.frame(id = c(1,2,3,4),
+                        last_name = c("Lee","Kim","Choi","Park"))
+
+customer2 <- data.frame(id = c(5,6),
+                        last_name = c("Lim","Bae"))
+
+id_name <- rbind(customer1,customer2)
+id_name
+
+```
+
+#### 2. cbind
+
+※ 결합하는 데이터들의 행 개수가 같아야 함.
+
+```{r cbind}
+custom_age <- data.frame(age = c(49,40,44,25,48,24))
+(customer <- cbind(id_name,custom_age))
+```
+
+#### 3. merge
+
+```{r merge.setup}
+head(id_name)
+id_number <- data.frame(id = c(4,5,6,7,8),
+                        number = c(1,3,2,5,0))
+head(id_number)
+```
+
+i\. id 칼럼 기준 공통된 값을 가지는 경우만 병합 (데이터 베이스의 Inner join)
+
+```{r inner_join}
+merge(id_name,id_number,by='id')
+```
+
+ii\. id 칼럼 기준 모든 행 병합 (Outer join)
+
+```{r outer_join}
+merge(id_name,id_number,by='id', all = TRUE)
+```
+
+iii\. id_name 데이터에 대해서만 id 칼럼 기준 모든 행 병합(Left Outer Join)
+
+```{r left_outer_join}
+merge(id_name,id_number,by='id', all.x = TRUE)
+```
+
+iv\. id_number 데이터에 대해서만 id 칼럼 기준 모든 행 병합(Right Outer Join)
+
+```{r right_outer_join}
+merge(id_name,id_number,by='id', all.y = TRUE)
+```
+
+### 2절. 데이터 요약
+
+#### 1. aggregate
+
+: 특정 칼럼을 기준으로 데이터를 그룹지어 집계함수 적용
+
+```{r aggregate}
+aggregate(Sepal.Width~Species, iris, mean)
+aggregate(cbind(Sepal.Width, Petal.Width)~Species, iris, mean)
+```
+
+#### 2. table
+
+(생략)
+
+#### 3. prob.table
+
+※ prop.table의 인자로는 table 형태의 객체
+
+```{r prob.table}
+data("Titanic")
+Titanic <- as.data.frame(Titanic)
+str(Titanic)
+head(Titanic)
+prop.table(table(Titanic$Age,Titanic$Survived))
+```
+
+#### 4. subset
+
+-   subset : 조건
+
+-   select : 특정 열
+
+```{r subset}
+subset(iris,
+       subset = (Species=='setosa' & Sepal.Length>5.5),
+       select = c(Species,Sepal.Length))
+```
+
+### 3절. apply 계열 함수
+
+#### 1. apply
+
+: 데이터의 행/열 방향으로 함수를 적용한 뒤 그 결과를 벡터/배열/리스트로 반환
+
+-   margin : 1 =\> 행 방향, 2 =\> 열 방향
+
+```{r apply}
+apply(iris[,1:4],2,mean)
+```
+
+#### 2. lapply
+
+: 결과를 리스트로 반환
+
+-   X : 벡터, 리스트, 표현식, 데이터프레임
+
+-   FUN : 적용할 함수
+
+```{r lapply}
+a <- c(1,2,3)
+b <- lapply(a, function(x){x^2})
+b
+
+class(b)
+
+unlist(b)
+```
+
+#### 3. sapply (simplify)
+
+: 결과를 벡터/행렬로 반환
+
+-   simplify=TRUE : TRUE =\> 벡터/행렬로, FALSE =\> 리스트로
+
+```{r sapply1}
+data(iris)
+sapply(iris, class) 
+class(sapply(iris, class)) 
+```
+
+※ simplify=TRUE 여도 simplify가 불가능하면 리스트로 반환
+
+```{r sapply2}
+sapply(iris, summary)
+class(sapply(iris, summary))
+```
+
+#### 4. vapply
+
+-   FUN.VALUE : 실행 후 출력되는 값의 형태를 지정
+
+```{r vapply}
+test <- list(1:100)
+test2 <- vapply(test, fivenum, FUN.VALUE = c('Min'=0, 'Q1'=0,"Median"=0, "Q3"=0, "Max"=0))
+test2
+```
+
+#### 5. mapply (multivariate)
+
+-   인자n : 함수의 인자
+
+```{r mapply}
+mapply(rep, c(1:4),c(4:1))
+```
+
+#### 6. tapply
+
+: 각 그룹별로 함수 적용
+
+-   INDEX : 데이터를 그룹별로 나누기 위한 기준
+
+```{r tapply1}
+data(iris)
+head(iris)
+tapply(iris$Sepal.Length, iris$Species, mean)
+```
+
+```{r tapply2}
+tapply(iris$Sepal.Length, iris$Species=='setosa', mean) # setosa인 것과 아닌 것
+```

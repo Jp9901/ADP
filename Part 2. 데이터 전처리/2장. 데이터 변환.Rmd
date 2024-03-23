@@ -1,0 +1,192 @@
+---
+title: "2장.데이터 변환"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+### 1절. 파생변수 생성
+
+#### 1. data.frame$
+(생략)
+
+
+####  2. transform
+
+```{r transform}
+head(iris)
+
+head(transform(iris, Sum.Length = Sepal.Length + Petal.Length))
+```
+
+####  3. within
+
+```{r within}
+head(iris)
+table(iris$Species)
+head(within(iris, {
+  category = numeric(0) # 새로운 변수 생성 시 필요
+  category[Species == 'setosa'] <- 1
+  category[Species == 'versicolor'] <- 2
+  category[Species == 'virginica'] <- 3
+  category = factor(category)
+}))
+```
+
+### 2절. 변수 축소
+
+#### 1. 주성분 분석 - prcomp, princomp
+
+```{r setup, include=FALSE}
+library(datasets)
+```
+
+- 상관관계
+```{r pairs}
+head(USArrests)
+
+pairs(USArrests, panel = panel.smooth, main = 'USArrests data')
+```
+
+=\> Murder와 UrbanPop간의 연관성 작음.
+
+-   주성분 분석 - 주성분 개수 결정
+
+i.  기여율
+
+```{r princomp}
+US.prin <- princomp(USArrests, cor=TRUE)
+summary(US.prin)
+```
+
+=\> 재2주성분에서의 누적기여율(Cumulative Proportion)이 85% 이상이므로 2번째 주성분까지 선택하는 것이 적절하다.
+
+ii. 스크리 산점도(scree plot)
+
+```{r scree_plot}
+plot(US.prin, type ='l')
+```
+
+=\> 3번째 주성분에서 기울기가 급격하게 줄어듦으로 제2주성분까지 선택하는 것이 적절하다.
+
+-   주성분계수 : 변수가 주성분에 기여하는 가중치
+
+```{r loadings}
+US.prin$loadings
+```
+
+제1주성분분석 : 0.536\*Murder + 0.583\*Assault + 0.278\*UrbanPop + 0.543\*Rape
+
+제2주성분분석 : 0.418\*Murder + 0.188\*Assault - 0.873\*UrbanPop - 0.167\*Rape
+
+-   scores(주성분점수) : 주성분들의 선형식을 통해 계산된 각 행별 좌표
+
+```{r scores}
+US.prin$scores
+```
+
+ex) Alabama의 각 행별 좌표 : (0.98556588, 1.13339238, 0.44426879, 0.156267145)
+
+-   행렬도 : 제1주성분과 제2주성분으로 이루어진 좌표평면상에 주성분점수를 나타낸 산점도
+
+```{r biplot}
+biplot(US.prin,scale = 0)
+```
+
+#### 2. 요인분석
+
+```{r factanal.setup}
+data("swiss")
+str(swiss)
+head(swiss)
+```
+
+-   min-max 정규화(뒤에 설명)
+
+```{r min-max_normal}
+Min <- apply(swiss,2,min)
+Max <- apply(swiss,2,max)
+swiss_fa <- scale(swiss, center=Min, scale = (Max-Min))
+head(swiss_fa)
+```
+
+-   요인의 개수
+
+i.  고유값
+
+```{r n_factos1}
+swiss.prin <- princomp(swiss, cor = TRUE)
+summary(swiss.prin)
+swiss.prin$sdev^2
+
+swiss.prin$sdev
+```
+
+고유값(standard deviation의 제곱)이 1 이상인 요인들로 결정 =\> 요인의 수를 2개로 결정
+
+ii.  scree plot
+
+```{r n_factors2}
+plot(swiss.prin, type = 'l')
+```
+
+=\> 제2주성분에서 기울기가 완만해지므로 요인의 수를 1개로 결정
+
+-   요인분석
+
+```{r factanal}
+factanal(swiss_fa, factors=2) # rotation = 'varimax'
+```
+
+Cumulative Var : 요인별 해당 값의 누적치 =\> 2개의 요인은 전체 데이터 분산의 약 63%를 설명
+
+### 3절. 표준화와 정규화
+
+#### 1.표준화
+
+-   scale(data, center = TRUE, scale = TRUE)
+    -   center : 데이터에서 벡터의 평균을 뱀
+    -   scale : 표준편차 or RMS으로 나눔
+
+```{r scale_standardization}
+data("mtcars")
+str(mtcars)
+
+# 두 변수 추출
+test.cars <- mtcars[,c('mpg','hp')]
+head(test.cars)
+
+# 표준화한 변수 추가
+test.cars <- transform(test.cars,
+                       mpg_scale = scale(test.cars$mpg),
+                       hp_scale = scale(test.cars$hp))
+head(test.cars)
+```
+
+#### 2. 정규화
+
+-   min-max 정규화
+
+i.  scale 함수
+
+```{r scale_normalization}
+Min <- min(iris$Sepal.Length)
+Max <- max(iris$Sepal.Length)
+
+iris$SL_new <- scale(iris$Sepal.Length, center = Min, scale = Max-Min)
+
+head(iris)
+```
+
+ii.  사용자 정의 함수
+```{r min_max_ft}
+normalize <- function(x){
+  return((x-min(x))/(max(x)-min(x)))
+}
+
+
+num <- c(50:500)
+
+num_new <- normalize(num)
+head(num_new)
+```
+
