@@ -90,7 +90,7 @@ ddply(baseball, .(id), subset, year==max(year), select=c('id','year','stint','te
 
 #### 1. dplyr 패키지
 
-```{r dplyr include=FALSE}
+```{r dplyr}
 library(dplyr)
 ```
 
@@ -235,13 +235,13 @@ dcast(air_melt, Month+Day~..., fun.aggregate = mean)
 
 #### 1. data.table 패키지
 
-```{r data.table, include=FALSE}
+```{r data.table}
 library(data.table)
 ```
 
 #### 2. 데이터 테이블 생성
 
-```{r data.table}
+```{r data.table[]}
 mydata <- data.table(x=c(1:3),y=c("A","B","C"))
 mydata
 ```
