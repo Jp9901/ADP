@@ -1,0 +1,71 @@
+---
+title: "6장. 날짜 데이터 전처리"
+output: html_document
+---
+
+### 1절. 날짜 데이터 다루기
+
+#### 1. R의 날짜 데이터 형식
+
+-   데이터 형식
+    1.  Date : 날짜만, 1970년 1월 1일 이후 경과된 날 수 저장
+    2.  POSIXct : 날짜와 시간, 1970년 1월 1일 이후 경과된 초 수와 시간대 저장
+    3.  POSIXlt : 날짜와 시간, 1900년 이후 연도,월,일,시,분,초 포함하는 정보를 리스트에 저장
+-   기본함수
+    1.  Sys.Date() : 현재 날짜
+    2.  Sys.time() : 현재 날짜와 시간
+    3.  as.Date() : 괄호 안의 데이터를 Data형식으로
+    4.  as.POSIXct() : 괄호 안의 데이터를 POSIXct형식으로
+    5.  as.POSIXlt() : 괄호 안의 데이터를 POSIXlt형식으로
+
+```{r}
+today <- Sys.Date()
+today
+class(today)
+unclass(today) # 1970년 1월 1일 이후 경과한 일 수
+```
+
+```{r}
+time <- Sys.time()
+time
+class(time)
+unclass(time) # 1970년 1월 1일 이후 경과한 초 수
+```
+
+```{r}
+time <- as.POSIXlt(Sys.time())
+time$year + 1900 # 1900년 이후 경과 년도 수 저장
+time$mon + 1 # 월 정보 0~11 값으로 저장
+time$mday
+time$wday
+```
+
+#### 2. 날짜 표시형식 변경
+
+1.  format(x, " ")
+
+```{r}
+now <- Sys.time()
+class(now)
+
+format(now, "%y-%m-%d %H:%M:%S")
+class(format(now, "%y-%m-%d %H:%M:%S"))
+```
+
+2.  as.Date(x, format=" ")
+
+```{r}
+date <- as.Date('20200101',format="%Y%m%d")
+date
+class(date)
+```
+
+#### 3. 날짜 데이터의 연산
+
+```{r}
+Sys.Date() + 100 # 현재 + 100일
+```
+
+```{r}
+difftime("1990-01-01",Sys.Date())
+```
