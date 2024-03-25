@@ -1,0 +1,308 @@
+---
+title: "4장. 패키지를 활용한 데이터 전처리"
+output: html_document
+---
+
+### 1절. plyr
+
+#### 1. plyr 패키지
+
+```{r plyr}
+library(plyr)
+```
+
+#### 2. adply
+
+: 배열을 입력받아 데이터프레임으로 반환
+
+```{r adply}
+data(iris)
+adply(iris,1,
+      function(row){
+        data.frame(setosa_PL1.5 =
+                     c(ifelse(row$Petal.Length<1.5 &
+                             row$Species=='setosa',"1","0"))
+                   )
+        })
+
+```
+
+#### 3. ddply
+
+: 데이터 프레임 -\> 데이터 프레임
+
+-   .(variables) : 데이터를 그룹화할 기준이 되는 변수
+-   ddply-func : ddply 내부함수
+
+```{r ddply1}
+data(iris)
+ddply(iris, .(Species),
+      function(sub){
+        data.frame(
+          mean_SL=mean(sub$Sepal.Length),
+          mean_SW=mean(sub$Sepal.Width),
+          mean_PL=mean(sub$Petal.Length),
+          mean_PW=mean(sub$Petal.Width)
+        )
+      })
+```
+
+※ ddply 내부함수 - transform, mutate, summarise, subset/select
+
+1.  transform : 새 칼럼 추가
+
+```{r ddply-transform}
+data("baseball")
+head(baseball)
+
+
+ddply(baseball, .(id), transform, avgG=sum(g)/length(year))
+```
+
+2.  mutate : 새 칼럼 추가 + 추가 칼럼 참조 가능
+
+```{r ddply-mutate}
+data("baseball")
+
+ddply(baseball, .(id), mutate, avgG=sum(g)/length(year), avgG_RND=round(avgG))
+```
+
+3.  summarise : 데이터 요약 정보
+
+```{r ddply-summarise}
+data("baseball")
+
+ddply(baseball, .(id), summarise, year_fin=max(year))
+```
+
+4.  subset : 조건을 만족하는 행들 출력\
+    select : 원하는 칼럼 출력
+
+```{r ddply-subset/select}
+data("baseball")
+
+ddply(baseball, .(id), subset, year==max(year), select=c('id','year','stint','team','lg','g'))
+
+
+```
+
+### 2절. dplyr
+
+#### 1. dplyr 패키지
+
+```{r dplyr include=FALSE}
+library(dplyr)
+```
+
+#### 2. filter
+
+: 조건에 맞는 행 추출
+
+```{r filter}
+library(MASS)
+
+data(Cars93)
+head(Cars93)
+
+Cars93 %>% filter((Manufacturer=='Audi'|Manufacturer=="BMW") & EngineSize>=2.4)
+```
+
+#### 3. select
+
+: 특정 열만 추출
+
+```{r select}
+# Cars93 %>% select(Model,Type,Price) # 에러 발생
+# 에러 발생 이유 : MASS 패키지의 select와 dplyr의 select 충돌
+
+Cars93 %>% dplyr::select(Model,Type,Price)
+```
+
+#### 4. group_by 와 summarise
+
+: group_by - 지정한 변수들 기준으로 그룹화, summarise - 통계치 계산
+
+```{r group_by summarise}
+Cars93 %>% group_by(Manufacturer) %>% 
+  summarise(mean_Price = mean(Price), max_Weight=max(Weight))
+```
+
+#### 5. mutate
+
+: 새로운 파생변수 추가
+
+```{r mutate}
+Cars93 %>% 
+  mutate(Pr_level=ifelse(Price < 12, "low",
+                                  ifelse(Price >= 12 & Price < 23 , 'midde', 'high'))) %>% 
+  dplyr::select(Model,Price,Pr_level)
+```
+
+#### 6. arrange
+
+: 특정 열 기준으로 데이터 정렬
+
+```{r arrange}
+data("Cars93")
+Cars93 %>% 
+  filter(Type %in% c("Middle", "Small")) %>% 
+  dplyr::select(Model,Type,Weight,Price) %>% 
+  group_by(Type) %>% 
+  mutate(Weight_lv=ifelse(Weight<median(Weight),'low','high')) %>% 
+  arrange(Price)
+```
+
+#### 7. {left,right,inner,full}\_join
+
+: 두 개 이상의 테이블을 특정 변수를 기준으로 결합
+
+```{r join}
+NAME <- data.frame(code=c("A01","A02","A03"),
+                   name=c("coffee","cake","cookie"))
+PRICE <- data.frame(code=c("A01","A02","A04"),
+                   price=c(3000,4000,3000))
+
+# left_join
+cafe_left <- left_join(NAME,PRICE, by='code')
+cafe_left
+
+# right_join
+cafe_right <- right_join(NAME,PRICE, by='code')
+cafe_right
+
+# inner_join
+cafe_inner <- inner_join(NAME,PRICE, by='code')
+cafe_inner
+
+# full_join
+cafe_full <- full_join(NAME,PRICE, by='code')
+cafe_full
+```
+
+#### 8. bind_rows과 bind_cols
+
+: bind_rows - 행 결합 (열이름이 다르면 빈자리 NA 값), bind_cols - 열 결합(행 개수 동일)
+
+```{r bind_rows}
+bind_rows(NAME,PRICE)
+```
+
+```{r bind_cols}
+A <- data_frame(id=c(1:5), name=c(80,90,95,100,75))
+B <- data_frame(y=c(80,75,100,90,80))
+bind_cols(A,B)
+```
+
+### 3절. reshape2
+
+#### 1. reshape2 패키지
+
+```{r reshape2}
+library(reshape2)
+```
+
+#### 2. melt
+
+: id(식별자), variable(측정변수), value(측정값) 세 칼럼으로 이루어진 데이터로 변환
+
+-   id.vars : 데이터를 변형할 때 기준이 되는 식별자 칼럼들
+
+-   measure.vars : 측정치 칼럼들(지정하지 않을 경우, 모든 칼럼)
+
+```{r melt}
+air_melt <- melt(airquality, id.vars = c('Month','Day'), na.rm = T)
+air_melt
+```
+
+#### 3. dcast
+
+: melt함수로 녹여진 형태의 데이터를 다시 여러 칼럼을 가진 형태로 변환해주는 함수
+
+-   formula : id변수 \~ variable변수
+
+-   fun.aggregate : id변수를 기준으로 여러 행이 존재할 경우 해당 행들에 적용할 집합 함수
+
+```{r dcast}
+air_dcast <- dcast(air_melt, Month+Day~...)
+air_dcast
+```
+
+```{r dcast_fun.aggregate}
+dcast(air_melt, Month+Day~..., fun.aggregate = mean)
+```
+
+### 4절. data.table
+
+#### 1. data.table 패키지
+
+```{r data.table, include=FALSE}
+library(data.table)
+```
+
+#### 2. 데이터 테이블 생성
+
+```{r data.table}
+mydata <- data.table(x=c(1:3),y=c("A","B","C"))
+mydata
+```
+
+```{r as.data.table}
+data("iris")
+class(iris)
+
+iris_dt <- as.data.table(iris)
+class(iris_dt)
+```
+
+#### 3. 데이터 접근
+
+: 데이터테이블[행, 열, by='그룹화 기준 변수']
+
+-   열 : 칼럼 번호 or .(칼럼명) or list형태
+
+```{r data.table[,,]}
+iris_dt[1,]
+iris_dt[,.(mean.PL=mean(Petal.Length)),by=Species]
+```
+
+#### 4. 새로운 변수 생성
+
+-   := : 새로운 칼럼 추가
+
+```{r}
+data("airquality")
+air <- as.data.table(airquality)
+
+air[,Wind_class := ifelse(Wind >= mean(Wind),"U","D")]
+air
+```
+
+#### 5. 데이터 정렬
+
+: 데이터테이블[행,열,by='그룹화 기준 변수'][order(칼럼명, decreasing=FALSE)]
+
+```{r}
+air[,season := ifelse(Month %in% c(12,1,2), 'winter',
+                      ifelse(Month %in% c(3:5), 'spring',
+                             ifelse(Month %in% c(6:8),'summer','fall')))]
+
+air[,.(Ozone_mean=mean(Ozone,na.rm=T), Solar.R_mean=mean(Solar.R, na.rm=T)),
+    by=.(season)][order(Ozone_mean,decreasing=T)]
+```
+
+#### 6. key를 활용하여 데이터 다루기
+
+: 색인을 통해 각 행에 접근하는 방식 사용
+
+=\> 데이터테이블[J('key가 가지는 값'),열,by='그룹화 할 변수명']
+
+```{r}
+data("baseball")
+baseball <- as.data.table(baseball)
+
+setkey(baseball,year)
+
+baseball[J(1960)]
+```
+
+#### 7. key를 활용한 데이터 병합
