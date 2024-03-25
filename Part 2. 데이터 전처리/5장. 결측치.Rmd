@@ -1,0 +1,104 @@
+---
+title: "5장. 결측치"
+output: html_document
+---
+
+### 1절. 결측치 인식
+
+#### 1. is.na(x)
+
+: 결측치일 경우, TRUE
+
+```{r}
+data("airquality")
+
+is.na(airquality$Ozone)
+sum(is.na(airquality$Ozone))
+table(sum(is.na(airquality$Ozone)))
+apply(airquality, 2, function(x) sum(is.na(x)))
+```
+
+#### 2. complete.cases(x)
+
+: 결측치가 없을 경우, TRUE
+
+```{r}
+air_na <- airquality[!complete.cases(airquality),]
+head(air_na)
+
+dim(airquality)
+dim(air_na)
+```
+
+### 2절. 결측치 처리
+
+#### 1. 결측치 대처법
+
+-   단순 대치법 - completes analysis, 평균 대치법, 단순확률 대치법
+
+-   다중 대치법 - 대치-\>분석-\>결합
+
+#### 2. 결측치 제거
+
+-   데이터명[!is.na(데이터명),]
+
+-   데이터명[completes.cases(데이터명),]
+
+-   데이터명 %\>% filter(!is.na(데이터명))
+
+-   na.omit(데이터명)
+
+#### 3. 평균 대치법
+
+```{r}
+# i.
+airquality$Ozone <- ifelse(is.na(airquality$Ozone),mean(airquality$Ozone, na.rm = T),airquality$Ozone)
+
+head(airquality)
+sum(is.na(airquality$Ozone))
+
+# ii.
+data("airquality")
+airquality[is.na(airquality$Ozone),'Ozone'] <- mean(airquality$Ozone, na.rm = T)
+sum(is.na(airquality$Ozone))
+```
+
+#### 4. 패키지 활용
+
+1.  ~~centralImputation(data) : na를 중앙값으로 대치~~
+
+2.  ~~centralValue(data) : 숫자데이터 -\> na = 중앙값 / 팩터 데이터 -\> na = 최빈값~~
+
+3.  ~~knnImputation(data,k) - knn알고리즘 이용하여 na 대치~~
+
+=\> DMwR 패키지 다운 불가
+
+```{r}
+# i. 숫자데이터 -> 중앙값
+data("airquality")
+head(airquality)
+sum(is.na(airquality$Ozone))
+
+airquality[is.na(airquality$Ozone),'Ozone'] <- median(airquality$Ozone, na.rm = T)
+sum(is.na(airquality$Ozone))
+```
+
+### 3절. 이상치 인식
+
+#### 1. 이상치란?
+
+: 정상 범위 밖에 있는 값
+
+#### 2. 사분위수
+
+1.  quantile
+2.  fivenum()
+3.  summary
+
+#### 3. boxplot을 활용한 이상치 판별
+
+```{r}
+data("airquality")
+OzoneBP <- boxplot(airquality$Ozone)
+OzoneBP
+```
