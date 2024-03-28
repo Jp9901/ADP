@@ -13,35 +13,13 @@ output: html_document
 
 #### 2. 교차표
 
-|                  | $\mathbf{A_1}$ | $\mathbf{A_2}$ |    $   
-                                                       \cdots 
-                                                         $    | $\mathbf{A_N}$ |    Total     |
+|                   | $\mathbf{A_1}$ | $\mathbf{A_2}$ | $\mathbf{\cdots}$ | $\mathbf{A_N}$ |    Total     |
 |:----------:|:----------:|:----------:|:----------:|:----------:|:----------:|
-| $\mathbf{ B_1 }$ |    $O_{11}$    |    $O_{12}$    |    $   
-                                                       \cdots 
-                                                         $    |    $O_{1N}$    | $T_{1\cdot}$ |
-|  $\mathbf{B_2}$  |    $O_{21}$    |    $O_{22}$    |    $   
-                                                       \cdots 
-                                                         $    |    $O_{2N}$    | $T_{2\cdot}$ |
-|         $        
-       \vdots      
-         $         |        $       
-                         \vdots     
-                           $        |        $       
-                                          \vdots     
-                                            $        |    $   
-                                                       \ddots 
-                                                         $    |        $       
-                                                                    \vdots     
-                                                                      $        |       $      
-                                                                                    \vdots    
-                                                                                      $       |
-|  $\mathbf{B_M}$  |    $O_{M1}$    |    $O_{M2}$    |    $   
-                                                       \cdots 
-                                                         $    |    $O_{MN}$    | $T_{M\cdot}$ |
-|    **Total**     | $T_{\cdot 1}$  | $T_{\cdot 2}$  |    $   
-                                                       \cdots 
-                                                         $    | $T_{\cdot N}$  |     $T$      |
+|  $\mathbf{B_1}$   |    $O_{11}$    |    $O_{12}$    |     $\cdots$      |    $O_{1N}$    | $T_{1\cdot}$ |
+|  $\mathbf{B_2}$   |    $O_{21}$    |    $O_{22}$    |     $\cdots$      |    $O_{2N}$    | $T_{2\cdot}$ |
+| $\mathbf{\vdots}$ |    $\vdots$    |    $\vdots$    |     $\ddots$      |    $\vdots$    |   $\vdots$   |
+|  $\mathbf{B_M}$   |    $O_{M1}$    |    $O_{M2}$    |     $\cdots$      |    $O_{MN}$    | $T_{M\cdot}$ |
+|     **Total**     |  $T_{\cdot1}$  |  $T_{\cdot2}$  |     $\cdots$      | $T_{\cdot N}$  |      T       |
 
 ### 2절. 적합성 검정
 
@@ -141,7 +119,7 @@ chisq.test(table(survey$W.Hnd, survey$Exer))
 
 #### 2. 가설 설정
 
-$ H_0 : P_{1j} = P_{2j} = \cdots = P_{rj} $
+$H_0 : P_{1j} = P_{2j} = \cdots = P_{rj}$
 
 #### 3. 검정 통계량
 
