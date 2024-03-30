@@ -1,0 +1,100 @@
+---
+title: "1장. 산점도"
+output: html_document
+---
+
+### 1절. 산점도
+
+#### 1. 산점도
+
+: 두 개의 연속형 변수 간의 관계를 알아볼 수 있도록 좌표평면 상에 관측점을 찍어 나타낸 그래프
+
+#### 2. plot 함수
+
+-   plot(x,y, xlab,ylab, main, pch,cex,col, xlim, ylim, type)
+
+```{r}
+library(MASS)
+data("Cars93")
+
+plot(Cars93$Length, Cars93$Weight)
+```
+
+### 2절. plot함수의 옵션
+
+#### 1. 축 이름(xlab,ylab)과 그래프 제목(main)
+
+```{r}
+plot(Cars93$Length,Cars93$Weight, xlab='Length',ylab='Weight', main='Cars93')
+```
+
+#### 2. 좌표축 범위(xlim, ylim)
+
+```{r}
+range(Cars93$Weight)
+range(Cars93$Length)
+
+plot(Cars93$Length, Cars93$Weight, xlim=c(130,230), ylim=c(1600,4400))
+```
+
+#### 3. 점의 종류(pch)
+
+```{r}
+par(mfrow=c(1,2))
+
+plot(Cars93$Length, Cars93$Weight, pch=8)
+plot(Cars93$Length, Cars93$Weight, pch='*')
+```
+
+#### 4. 점의 크기(cex)
+
+```{r}
+par(mfrow=c(1,2))
+
+plot(Cars93$Length, Cars93$Weight, cex=0.5)
+plot(Cars93$Length, Cars93$Weight, cex=2)
+```
+
+#### 5. 색상(col)
+
+#### 6. 그래프 종류(type)
+
+※ p:point, l:line, b:점+선(만나는 지점에서 하나만), o:점+선, n:그래프 초기화
+
+```{r}
+par(mfrow=c(1,2))
+
+plot(tapply(Cars93$Weight, Cars93$Length, mean),xlab='Length',ylab='Expected Weight', type='p')
+plot(tapply(Cars93$Weight, Cars93$Length, mean),xlab='Length',ylab='Expected Weight', type='b')
+```
+
+#### 7. 선 종류(lty)
+
+※ blank, solid, dashed, dotted, dotdash, longdash, twodash
+
+```{r}
+plot(tapply(Cars93$Weight, Cars93$Length, mean),xlab='Length',ylab='Expected Weight',type='l', lty='dotted')
+```
+
+### 3절. 그래프 서식
+
+#### 1. 여러 개의 그래프를 한 화면에 나타내기(par)
+
+-   par(mfrow=c(nr,nc))
+
+#### 2. 범례(legend)
+
+```{r}
+plot(1:10, type = 'n',xlab = '',ylab = '')
+
+legend('bottom',c('x1','y1'),pch=1:2, title = 'bottom')
+legend('left',c('x2','y2'),pch=3:4, title = 'left')
+legend('right',c('x3','y3'),pch=5:6, title = 'right')
+legend('top',c('x4','y4'),pch=7:8, title = 'top')
+legend('center',c('x5','y5'),pch=1:2, title = 'center')
+
+legend(2.5,8,c('x6','y6'),pch=3:4, title = '#1')
+legend(2.5,4,c('x7','y7'),pch=5:6,bg='orange', title = '#2')
+legend(7.5,8,c('x8','y8'),pch=7:8,bg='skyblue', title = '#3')
+legend(7.5,4,c('x9','y9'),pch=1:2,bg='gray', title = '#4')
+```
