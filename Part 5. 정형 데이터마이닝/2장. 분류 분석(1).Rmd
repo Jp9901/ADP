@@ -1,0 +1,291 @@
+---
+title: "2장. 분류 분석(1)"
+output: html_document
+---
+
+### 1절. 로지스틱 회귀분석
+
+$$
+logit(p) =log(odds) =log(\frac{P(y)}{1-P(y)}) = \beta_0 + \beta_1 x_1 +\cdots+\beta_k x_k \\
+=> P(y)=\frac{1}{1+exp[-(\beta_0 + \beta_1 x_1 +\cdots+\beta_k x_k)]}\\
+$$
+
+#### 1. R을 이용한 이항 로지스틱 회귀분석
+
+-   glm(formula, data, family='binomial')
+
+    -   family : 분석에 따른 link function 선택 (binomial : 이항, gaussian : 가우시안, Gamma : 감마, poisson : 포아송)
+
+-   predict(model, newdata, type,....)
+
+    -   type : 예측 결과의 유형 (link : log-odds 값, ~~class : 범주형 값~~, response : 0\~1 확률값)
+
+```{r}
+credit <- read.csv('german_credit.csv')
+head(credit)
+credit$Creditability <- as.factor(credit$Creditability)
+str(credit)
+
+set.seed(1)
+idx <- sample(1:nrow(credit),nrow(credit)*0.7,replace=F)
+train <- credit[idx,]
+test <- credit[-idx,]
+
+logistic <- glm(Creditability~.,
+               data = train,
+               family = 'binomial')
+summary(logistic)
+```
+
+=\> 회귀계수의 p-value가 0.05보다 높게 나타나는 변수가 많으므로 단계적 선택법 이용
+
+```{r}
+# step 함수를 이용한 로지스틱 
+step.logistic <- step(glm(Creditability~1, data = train, family = 'binomial'),
+                      scope = list(lower=~1, upper=~Account.Balance+Duration.of.Credit..month.+Payment.Status.of.Previous.Credit+Purpose+Credit.Amount+Value.Savings.Stocks+Length.of.current.employment+Instalment.per.cent+Sex...Marital.Status+Guarantors+Duration.in.Current.address+Most.valuable.available.asset+Age..years.+Concurrent.Credits+Type.of.apartment+No.of.Credits.at.this.Bank+Occupation+No.of.dependents+Telephone+Foreign.Worker),
+                      direction = 'both')
+summary(step.logistic)
+```
+
+```{r}
+pred <- predict(step.logistic, test[,-1],type = 'response')
+pred1 <- as.data.frame(pred)
+pred1$grade <- ifelse(pred1$pred<0.5,0,1)
+
+library(caret)
+confusionMatrix(data = as.factor(pred1$grade), reference = test[,1], positive = '1')
+```
+
+```{r}
+# ROC
+library(ROCR)
+pred.logistic.roc <- prediction(as.numeric(pred1$grade),as.numeric(test[,1]))
+plot(performance(pred.logistic.roc, 'tpr','fpr'))
+performance(pred.logistic.roc,'auc')@y.values
+```
+
+#### 2. R을 이용한 다항 로지스틱 회귀분석(nnet 패키지)
+
+-   multinom(formula, data)
+
+```{r}
+data(iris)
+
+set.seed(1)
+idx <- sample(1:nrow(iris),nrow(iris)*0.7,replace=F)
+train.iris <- iris[idx,]
+test.iris <- iris[-idx,]
+
+library(nnet)
+mul.iris <- multinom(Species~., train.iris)
+pred.iris <- predict(mul.iris, test.iris[,-5])
+
+confusionMatrix(pred.iris,test.iris[,5])
+```
+
+### 2절. 의사결정나무
+
+![](images/EBKl1I3.png){width="354"}
+
+#### 1. 의사결정나무의 분석 과정
+
+의사결정나무의 형성과정 - 성장, 가지치기, 타당성 평가, 해석 및 예측
+
+-   성장
+
+    적절한 최적의 분리 규칙(splitting rule)을 통해 성장, 정지규칙(stopping rule)을 통해 중단
+
+    이산형 종속변수 - 카이제곱 통계량 p-value, 지니 지수, 엔트로피 지수\
+    연속형 종속변수 - 분산분석에서 F 통계량, 분산의 감소량
+
+-   가지치기
+
+    마디에 속하는 자료가 일정 수(일반적으로 5) 이하 일 때 분할 정지하고 비용-복잡도 가지치기
+
+    ※ 모형의 복잡도 = 나무의 크기
+
+-   타당성 평가 단계
+
+    이익도표, 위험도표, 시험자료를 이용하여 의사결정 나무를 평가
+
+-   해석 및 예측 단계
+
+#### 2. 의사결정나무 알고리즘
+
+-   CART(Classification and Regression Tree) : 범주형 -\> 지니지수, 연속형 -\> 분산
+
+-   C4.5 와 C5.0 : 다지분리 가능, 범주형 -\> 엔트로피지수
+
+-   CHAID(Chi-squared Automatic Interaction Detection) : 범주형 변수 -\> 카이제곱 통계량
+
+#### 3. R을 이용한 의사결정나무 분석 (rpart 패키지)
+
+-   
+
+    rpart(formual, data, method, control=rpart.control(),...)
+
+    :   CART 방법
+
+    -   method : 의사결정나무 tree 종류 선정('anova','poisson','class','exp')
+
+    -   control : 의사결정나무를 만들 때 사용할 option 설정
+
+```{r}
+library(rpart)
+library(rpart.plot)
+dt.model <- rpart(Creditability~.,
+                  method = 'class',
+                  data = train,
+                  control = rpart.control(maxdepth = 5,
+                                          minsplit = 15))
+prp(dt.model, type = 4, extra = 2)
+```
+
+```{r}
+dt.model$cptable
+```
+
+-   cptable
+
+    -   nsplit : 분할 횟수
+
+    -   xerror, std : 해당 CP에서 cross validation했을 때 오류율, 편차
+
+        =\> xerror가 가장 낮은 split 개수를 선택\
+        (분할을 5번 진행)
+
+```{r}
+# 최적 나무 선정
+opt <- which.min(dt.model$cptable[,'xerror'])
+cp <- dt.model$cptable[opt,"CP"]
+prune.c <- prune(dt.model,cp=cp)
+plotcp(dt.model)
+```
+
+-   plotcp
+
+    =\> xerror가 가장 낮을 때, 결과에 따라 교차타당성오차를 최소로 하는 트리를 형성\
+    (나무의 크기가 10일 때 최적의 나무)
+
+```{r}
+# 오분류표
+library(caret)
+pred.dt <- predict(dt.model, test[,-1],type = 'class')
+confusionMatrix(data = pred.dt, reference = test[,1],positive = '1')
+
+# ROC 그래프
+library(ROCR)
+pred.dt.roc <- prediction(as.numeric(pred.dt),as.numeric(test[,1]))
+plot(performance(pred.dt.roc,'tpr','fpr'))
+performance(pred.dt.roc,'auc')@y.values # AUC
+```
+
+#### 예제 - iris
+
+```{r}
+library(rpart)
+library(rpart.plot)
+
+dt.model2 <- rpart(Species~., data = train.iris)
+prp(dt.model2, type = 4, extra = 2)
+
+pred.dt2 <- predict(dt.model2, test.iris[,-5],type = 'class')
+confusionMatrix(data = pred.dt2, reference = test.iris[,5])
+```
+
+### 3절. 앙상블(ensemble) 기법
+
+#### 1. 배깅(Bagging) (ipred 패키지)
+
+: 여러 개의 붓스트랩 자료를 생성하고 각 붓스트랩 자료에 예측모형을 만든 후 결합하여 최종 예측모형을 만드는 방법
+
+※ 붓스트랩은 단순랜덤 복원추출 방법을 활용하여 동일한 크기의 표본을 여러개 생성\
+=\> 샘플에 한 번도 선택되지 않는 원데이터(OOB)는 전체 샘플의 약 36.8%
+
+-   bagging(formula, data, mfinal, control=,...)
+
+    -   mfinal : 반복 수 또는 사용할 트리의 수(default=100)
+
+    -   control : 의사결정나무를 만들 때 사용할 option을 설정
+
+```{r}
+#install.packages('ipred')
+library(ipred)
+bag <- bagging(Creditability~.,
+               data = train,
+               mfinal=15)
+
+pred.bg <- predict(bag, test, type = 'class')
+
+# 오분류표
+library(caret)
+confusionMatrix(data = pred.bg, reference = test$Creditability,
+                positive = '1')
+
+# ROC 그래프와 AUC
+library(ROCR)
+pred.bg.roc <- prediction(as.numeric(pred.bg), as.numeric(test[,1]))
+plot(performance(pred.bg.roc, 'tpr', 'fpr'))
+performance(pred.bg.roc,'auc')@y.values
+```
+
+#### 2. 부스팅(Boosting) (~~adabag 패키지~~)
+
+: 예측력이 약한 모형들을 결합하여 강한 예측모형을 만드는 방법
+
+-   ~~boosting(formula, data, boos=T/F, mfinal, control =,...)~~
+
+#### 3. 랜덤포레스트(Random Forest) (randomForest 패키지)
+
+: 약한 학습기들을 생성한 후 이를 선형 결합하여 최종학습기를 만드는 방법
+
+해석이 어렵지만 예측력이 매우 높음.
+
+-   randomForest(formula, data, ntree, mtry,...)
+
+    -   ntree : 사용할 트리의 수
+
+    -   mtry : 각 분할에서 랜덤으로 뽑힌 변수의 개수(보통, 분류 -\> sqrt(p), 회귀-\> p/3 )
+
+```{r}
+library(randomForest)
+set.seed(1)
+rf.model <- randomForest(Creditability ~.,
+                         data = train,
+                         ntree=50,
+                         mtry=sqrt(20),
+                         importance=T) # 변수중요도 확인
+rf.model
+rf.model$importance
+varImpPlot(rf.model)
+```
+
+```{r}
+pred.rf <- predict(rf.model, test[,-1],type = 'class')
+
+# 오분류표
+library(caret)
+confusionMatrix(data = pred.rf , reference = test[,1], positive = '1')
+
+# ROC 그래프와 AUC
+library(ROCR)
+pred.rf.roc <- prediction(as.numeric(pred.rf),as.numeric(test[,1]))
+plot(performance(pred.rf.roc,'tpr','fpr'))
+performance(pred.rf.roc,'auc')@y.values
+```
+
+#### 예제 - iris
+
+```{r}
+library(randomForest)
+set.seed(1)
+rf.model2 <- randomForest(Species ~.,
+                          data = train.iris,
+                          ntree=50,
+                          mtry=sqrt(4),
+                          importance=T)
+pred.rf2 <- predict(rf.model2,test.iris[,-5],type = 'class')
+
+library(caret)
+confusionMatrix(data = pred.rf2, reference = test.iris[,5], positive = '1')
+```

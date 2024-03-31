@@ -1,0 +1,261 @@
+---
+title: "2장. 분류 분석(2)"
+output: html_document
+---
+
+```{r setup}
+# credit card
+credit <- read.csv('german_credit.csv')
+credit$Creditability <- as.factor(credit$Creditability)
+
+set.seed(1)
+idx <- sample(1:nrow(credit),nrow(credit)*0.7,replace=F)
+train <- credit[idx,]
+test <- credit[-idx,]
+
+# iris
+data(iris)
+
+set.seed(1)
+idx <- sample(1:nrow(iris),nrow(iris)*0.7,replace=F)
+train.iris <- iris[idx,]
+test.iris <- iris[-idx,]
+```
+
+### 4절. SVM(Support Vector Machine) (e1071 패키지)
+
+#### 1. 작동 원리
+
+여러 경계 중 가장 큰 폭을 가진 경계를 찾아 분류/회귀
+
+#### 2. R을 이용한 SVM 분석
+
+-   svm(formula, data, kernel, gamma, cost,...)
+
+    -   kernel : 훈련과 예측에 사용되는 커널 ('radial','linear','polynomial','sigmoid')
+
+    -   gamma : 초평면의 기울기 (default = 1/p)
+
+    -   cost : 과적합을 막는 정도 (default = 1)
+
+-   tune.svm(formula, data, kernel, gamma, cost,...)\
+    : SVM 모형에서 최적의 파라미터 값을 찾아내기 위해 사용되는 함수
+
+```{r}
+library(e1071)
+tune.svm(Creditability~.,
+         data = credit,
+         gamma = 10^(-6:-1),
+         cost = 10^(1:2))
+
+svm.model <- svm(Creditability~.,
+                 data = train,
+                 kernel='radial',
+                 gamma=0.01,
+                 cost=10)
+summary(svm.model)
+
+pred.svm <- predict(svm.model, test, type='class')
+
+# 오분류표
+library(caret)
+confusionMatrix(data = pred.svm, reference = test[,1], positive = '1')
+
+# ROC 그래프와 AUC
+library(ROCR)
+pred.svm.roc <- prediction(as.numeric(pred.svm), as.numeric(test[,1]))
+plot(performance(pred.svm.roc,'tpr','fpr'))
+performance(pred.svm.roc,'auc')@y.values
+```
+
+#### 예제 - iris
+
+### 5절. 나이브 베이즈 분류(Naive Bayes Classification) (e1071 패키지)
+
+#### 1. Bayes theorem
+
+: 두 확률 변수의 사전 확률과 사후 확률 사이의 관계를 나타내는 정리
+
+$$
+P(A|B) = \frac{P(B\cap A)}{P(B)} = \frac{P(A)P(B|A)}{P(B)} = \frac{P(A)P(B|A)}{P(A)P(B|A)+P(A^c)P(B|A^c)}
+$$
+
+#### 2. 나이브 베이즈 분류
+
+: 속성값에 대해 다른 속성이 독립적이라 전제했을 때 해당 속성 값이 클래스 분류에 미치는 영향을 측정
+
+#### 3. R을 이용한 나이브 베이즈 분류 분석
+
+-   naiveBayes(formula, data, laplace=0,...)
+
+    -   laplace : 라플라스 보정 여부
+
+```{r}
+library(e1071)
+nb.model <- naiveBayes(Creditability~.,
+                       data = train,
+                       laplace = 0)
+nb.model
+
+pred.nb <- predict(nb.model, test[,-1],type = 'class')
+
+# 오분류표
+library(caret)
+confusionMatrix(data = pred.nb, reference = test[,1], positive = '1')
+
+# ROC 그래프와 AUC
+pred.nb.roc <- prediction(as.numeric(pred.nb),as.numeric(test[,1]))
+library(ROCR)
+plot(performance(pred.nb.roc,'tpr','fpr'))
+performance(pred.nb.roc,'auc')@y.values
+```
+
+### 6절. K-NN(K-Nearest Neighbor) (class 패키지)
+
+#### 1. K-NN 알고리즘의 원리
+
+#### 2. K의 선택
+
+일반적으로 **훈련 데이터 개수의 제곱근**으로 설정
+
+#### 3. R을 이용한 K-NN 분석
+
+-   knn(train, test, cl, k,...)
+
+    -   cl : 훈련 데이터의 종속변수
+
+    -   k : 이웃의 개수
+
+```{r}
+library(class)
+knn.3 <- knn(train[,-1], test[,-1],train[,1],k=3)
+knn.26<- knn(train[,-1], test[,-1],train[,1],
+             k=round(sqrt(nrow(train))))
+
+library(caret)
+confusionMatrix(knn.3, test$Creditability)
+confusionMatrix(knn.26, test$Creditability)
+```
+
+```{r}
+# 최적의 k
+result <- numeric()
+k=1:28
+for (i in k) {
+  pred <- knn(train[,-1], test[,-1],train[,1],k=i)
+  t <- table(pred, test$Creditability)
+  result[i] <- (t[1,1]+t[2,2])/sum(t)
+}
+result
+which(result==max(result))
+```
+
+### 7절. 인공신경망 모형(Artificial Neural Network) (nnet 패키지)
+
+#### 1. 특징
+
+입력 링크에서 여러 신호를 받아서 새로운 활성화 수준을 계산하고 출력 링크로 출력 신호를 보냄
+
+활성화 함수를 이용해 출력을 결정하며 입력신호의 가중치 합을 계산하여 임계값 비교 \
+-\> -1 or 1 출력
+
+-   뉴런의 활성화 함수
+
+    -   계단 함수
+
+    -   부호 함수
+
+    -   시그모이드 함수
+
+    -   relu 함수
+
+    -   softmax 함수
+
+#### 2. R을 이용한 인공신경망 분석
+
+-   nnet(formula, data, size, maxit, decay=5e-04,...)
+
+    -   size : hidden node의 개수
+
+    -   maxit : 학습 반복횟수, 반복 중 가장 좋은 모델을 선정
+
+    -   decay : 가중치 감소의 모수
+
+-   garson(mod_in) (NeuralNetTools 패키지)\
+    : 모델의 변수 중요도 파악
+
+    -   mod_in : 생성된 인공신경망 모델
+
+```{r}
+library(nnet)
+set.seed(1)
+nn.model <- nnet(Creditability~.,
+                 data = train,
+                 size=2,
+                 maxit=200,
+                 decay=5e-04)
+summary(nn.model)
+```
+
+```{r}
+# 변수중요도
+#install.packages('NeuralNetTools')
+library(NeuralNetTools)
+garson(nn.model)
+```
+
+```{r}
+pred.nn <- predict(nn.model, test[,-1], type = 'class')
+
+# 오분류표
+library(caret)
+confusionMatrix(as.factor(pred.nn), test[,1],positive = '1')
+
+# ROC그래프와 AUC
+library(ROCR)
+pred.nn.roc <- prediction(as.numeric(pred.nn), as.numeric(test[,1]))
+plot(performance(pred.nn.roc,'tpr','fpr'))
+performance(pred.nn.roc,'auc')@y.values
+```
+
+-   neuralnet(formula, data, algorithm, threshold, hidden, stepmax,...) (neuralnet 패키지)\
+    : 탄력적 역전파가 사용되었고 인공신경망 중 빠른 알고리즘
+
+    -   algorithm : 사용할 알고리즘 지정 ('backprop','rprop+','rprop-',...)
+
+    -   threshold : 훈련중단 기준 (default = 0.01)
+
+    -   hidden : 은닉노드의 개수
+
+    -   stepmax : 인공 신경망 훈련 수행 최대 횟수
+
+```{r}
+#install.packages('neuralnet')
+library(neuralnet)
+
+data("infert")
+set.seed(1)
+in.part <- createDataPartition(infert$case,
+                               times = 1,
+                               p=0.7)
+table(infert[in.part$Resample1,'case'])
+
+parts <- as.vector(in.part$Resample1)
+train.infert <- infert[parts,]
+test.infert <- infert[-parts,]
+
+nn.model2 <- neuralnet(case~age+parity+induced+spontaneous,
+                       data=train.infert,
+                       hidden = c(2,2),
+                       algorithm = 'rprop+',
+                       threshold = 0.01,
+                       stepmax = 1e+5)
+plot(nn.model2)
+
+
+# 오분류표
+set.seed(1)
+test.infert$nn.model2_pred.prob <- compute(nn.model2, covariate = test.infert[,c(2:4,6)])$net.result
+test.infert$nn.model2_pred <- ifelse(test.infert$nn.model2_pred.prob>0.5,1,0)
+confusionMatrix(as.factor(test.infert$nn.model2_pred),as.factor(test.infert[,5]))
+```
