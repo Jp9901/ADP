@@ -38,8 +38,11 @@ test.iris <- iris[-idx,]
 
     -   cost : 과적합을 막는 정도 (default = 1)
 
--   tune.svm(formula, data, kernel, gamma, cost,...)\
-    : SVM 모형에서 최적의 파라미터 값을 찾아내기 위해 사용되는 함수
+-   
+
+    tune.svm(formula, data, kernel, gamma, cost,...)\\
+
+    :   SVM 모형에서 최적의 파라미터 값을 찾아내기 위해 사용되는 함수
 
 ```{r}
 library(e1071)
@@ -156,7 +159,7 @@ which(result==max(result))
 
 입력 링크에서 여러 신호를 받아서 새로운 활성화 수준을 계산하고 출력 링크로 출력 신호를 보냄
 
-활성화 함수를 이용해 출력을 결정하며 입력신호의 가중치 합을 계산하여 임계값 비교 \
+활성화 함수를 이용해 출력을 결정하며 입력신호의 가중치 합을 계산하여 임계값 비교\
 -\> -1 or 1 출력
 
 -   뉴런의 활성화 함수
@@ -181,8 +184,11 @@ which(result==max(result))
 
     -   decay : 가중치 감소의 모수
 
--   garson(mod_in) (NeuralNetTools 패키지)\
-    : 모델의 변수 중요도 파악
+-   
+
+    garson(mod_in) (NeuralNetTools 패키지)\\
+
+    :   모델의 변수 중요도 파악
 
     -   mod_in : 생성된 인공신경망 모델
 
@@ -218,8 +224,11 @@ plot(performance(pred.nn.roc,'tpr','fpr'))
 performance(pred.nn.roc,'auc')@y.values
 ```
 
--   neuralnet(formula, data, algorithm, threshold, hidden, stepmax,...) (neuralnet 패키지)\
-    : 탄력적 역전파가 사용되었고 인공신경망 중 빠른 알고리즘
+-   
+
+    neuralnet(formula, data, algorithm, threshold, hidden, stepmax,...) (neuralnet 패키지)\\
+
+    :   탄력적 역전파가 사용되었고 인공신경망 중 빠른 알고리즘
 
     -   algorithm : 사용할 알고리즘 지정 ('backprop','rprop+','rprop-',...)
 
@@ -232,6 +241,7 @@ performance(pred.nn.roc,'auc')@y.values
 ```{r}
 #install.packages('neuralnet')
 library(neuralnet)
+library(caret)
 
 data("infert")
 set.seed(1)
@@ -254,8 +264,8 @@ plot(nn.model2)
 
 
 # 오분류표
-set.seed(1)
-test.infert$nn.model2_pred.prob <- compute(nn.model2, covariate = test.infert[,c(2:4,6)])$net.result
+set.seed(2)
+test.infert$nn.model2_pred.prob <- compute(nn.model2, covariate = test.infert[,c(2:4,6)])$net.result   # 오류가 있는듯
 test.infert$nn.model2_pred <- ifelse(test.infert$nn.model2_pred.prob>0.5,1,0)
 confusionMatrix(as.factor(test.infert$nn.model2_pred),as.factor(test.infert[,5]))
 ```

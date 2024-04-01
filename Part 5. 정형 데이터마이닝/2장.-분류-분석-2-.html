@@ -388,7 +388,7 @@ test.iris &lt;- iris[-idx,]</code></pre>
 <li><dl>
 <dt>tune.svm(formula, data, kernel, gamma, cost,…)\</dt>
 <dd>
-SVM 모형에서 최적의 파라미터 값을 찾아내기 위해 사용되는 함수
+<p>SVM 모형에서 최적의 파라미터 값을 찾아내기 위해 사용되는 함수</p>
 </dd>
 </dl></li>
 </ul>
@@ -792,7 +792,7 @@ result</code></pre>
 <li><dl>
 <dt>garson(mod_in) (NeuralNetTools 패키지)\</dt>
 <dd>
-모델의 변수 중요도 파악
+<p>모델의 변수 중요도 파악</p>
 </dd>
 </dl>
 <ul>
@@ -897,7 +897,7 @@ plot(performance(pred.nn.roc,&#39;tpr&#39;,&#39;fpr&#39;))</code></pre>
 <dt>neuralnet(formula, data, algorithm, threshold, hidden, stepmax,…)
 (neuralnet 패키지)\</dt>
 <dd>
-탄력적 역전파가 사용되었고 인공신경망 중 빠른 알고리즘
+<p>탄력적 역전파가 사용되었고 인공신경망 중 빠른 알고리즘</p>
 </dd>
 </dl>
 <ul>
@@ -915,7 +915,9 @@ library(neuralnet)</code></pre>
 <pre><code>## The following object is masked from &#39;package:ROCR&#39;:
 ## 
 ##     prediction</code></pre>
-<pre class="r"><code>data(&quot;infert&quot;)
+<pre class="r"><code>library(caret)
+
+data(&quot;infert&quot;)
 set.seed(1)
 in.part &lt;- createDataPartition(infert$case,
                                times = 1,
@@ -938,8 +940,8 @@ plot(nn.model2)
 
 
 # 오분류표
-set.seed(1)
-test.infert$nn.model2_pred.prob &lt;- compute(nn.model2, covariate = test.infert[,c(2:4,6)])$net.result
+set.seed(2)
+test.infert$nn.model2_pred.prob &lt;- compute(nn.model2, covariate = test.infert[,c(2:4,6)])$net.result   # 오류가 있는듯
 test.infert$nn.model2_pred &lt;- ifelse(test.infert$nn.model2_pred.prob&gt;0.5,1,0)
 confusionMatrix(as.factor(test.infert$nn.model2_pred),as.factor(test.infert[,5]))</code></pre>
 <pre><code>## Confusion Matrix and Statistics

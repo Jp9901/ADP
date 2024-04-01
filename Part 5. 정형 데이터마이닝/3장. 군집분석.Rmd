@@ -1,0 +1,243 @@
+---
+title: "3장. 군집분석"
+output: html_document
+---
+
+```{r setup}
+# credit card
+credit <- read.csv('german_credit.csv')
+credit$Creditability <- as.factor(credit$Creditability)
+
+set.seed(1)
+idx <- sample(1:nrow(credit),nrow(credit)*0.7,replace=F)
+train <- credit[idx,]
+test <- credit[-idx,]
+```
+
+### 1절. 군집분석
+
+#### 1. 개요
+
+유사성이 높은 대상 집단을 분류, 군집이 속한 객체들의 유사성과 서로 다른 군집에 속한 객체 간의 상이성을 규명하는 분석 방법
+
+#### 2. 특징
+
+-   요인분석과 차이점 : 요인분석은 유사한 변수를 함께 묶어줌
+
+-   판별분석과 차이점 : 사전에 집단이 나누어져 있는 자료를 통해 새로운 데이터를 기존의 집단에 할당
+
+#### 3. 거리
+
+i\. 연속형 변수
+
+-   유클리디안 거리
+
+    $$
+    d(x,y)=\sqrt{(x_1-y_1)^2+\cdots+(x_p-y_p)^2}
+    $$
+
+-   표준화 거리
+
+    $$
+    d(x,y) = \sqrt{(x-y)^`D^{-1}(x-y)} \; , \quad D = diag\{s_{11},...,s_{pp}\} 
+    $$
+
+-   마할라노비스 거리
+
+    $$
+    d(x,y)=\sqrt{(x-y)^`S^{-1}(x-y)}\; , \quad S=\{S_{ij}\}는 \, 공분산행렬 
+    $$
+
+-   체비셰프 거리
+
+    $$
+    d(x,y)=max_i|x_i-y_i|
+    $$
+
+-   맨하탄 거리
+
+    $$
+    d(x,y) = \sum^p_{i=1} |x_i-y_i|
+    $$
+
+-   캔버라 거리
+
+    $$
+    d(x,y)=\sum^p_{i=1} \frac{|x_i-y_i|}{(x_i+y_i)}
+    $$
+
+-   민코우스키 거리
+
+    $$
+    d(x,y)=[\sum^p_{i=1}|x_i-y_i|^m]^{1/m} \quad m=1 \; or\;  2
+    $$
+
+ii\. 범주형 변수
+
+-   자카드 거리
+
+    $$
+    1-J(A,B)=\frac{|A \cup B|-|A \cap B|}{|A \cup B|}
+    $$
+
+-   자카드 계수
+
+    $$
+    J(A,B)=\frac{|A \cap B|}{|A \cup B|}
+    $$
+
+-   코사인 유사도
+
+    $$
+    cosine \; similarity = 1-\frac{A \bullet B}{||A||_2 \bullet ||B||_2}
+    $$
+
+### 2절. 계층적 군집분석
+
+: n개의 군집으로 시작해 점차 군집의 개수를 줄여 나가는 방법
+
+#### 1. 계충적 군집분석 종류
+
+1.  최단연결법
+2.  최장연결법
+3.  평균연결법
+4.  와드연결법
+5.  군집화
+
+##### R 
+
+-   dist(data, method)
+
+    -   method : 거리측정 방법('euclidean','maximum','manhattan','canberra',binary','minkowski')
+
+-   hclust(data, method)
+
+    -   data : dist 함수로 거리가 측정된 데이터
+
+    -   method : 거리측정 방법 ('single','complete','average','median','ward.D')
+
+```{r}
+data("USArrests")
+head(USArrests)
+
+# dist 함수
+US.dist <- dist(USArrests, 'euclidean')
+US.dist
+
+# hclust 함수
+## 1. 최단거리법
+US.single <- hclust(US.dist, method = 'single')
+plot(US.single) # 덴드로그램
+
+## 2. 최장거리법
+US.complete <- hclust(US.dist, method = 'complete')
+plot(US.complete)
+
+## 3. 평균거리법
+US.average <- hclust(US.dist, method = 'average')
+plot(US.average)
+```
+
+※ cutree함수 : 계층적 군집의 결과를 이용하여 tree의 높이(h)나 그룹의 수(k)를 옵션으로 지정
+
+```{r}
+group <- cutree(US.average, k=6)
+group
+```
+
+※ rect.hclust함수 : plot함수를 통한 그래프에서 각각의 그룹을 사각형으로 구분지어 나타냄
+
+```{r}
+plot(US.average)
+rect.hclust(US.average,k=6,border = 'red')
+```
+
+### 3절. 비계층적 군집분석
+
+#### 1. 개요
+
+n개의 개체를 k개의 군집으로 나누어 모든 가능한 방법을 점검해 최적화한 군집 형성
+
+#### 2. K-평균 군집분석(k-means clustering)
+
+-   방법
+
+    1.  원하는 군집의 개수와 초기 값(seed)들을 정해 seed 중심으로 군집 형성
+    2.  각 데이터를 거리가 가장 가까운 seed가 있는 군집으로 분류
+    3.  각 군집의 seed 값 다시 계산
+
+##### R
+
+-   kmeans(data,centers,...)
+
+    -   centers : 군집의 개수 설정
+
+-   Nbclust(data, min.nc. max.nc, method,...)\
+    : 최적의 k 선정
+
+    -   min.nc : 최소 군집의 수
+
+    -   max.nc : 최대 군집의 수
+
+    -   method : 군집분석 방법 ('kmeans','median','single','complete','average')
+
+```{r}
+train.data <- train[,-1]
+credit.kmeans <- kmeans(train.data, centers = 2)
+credit.kmeans
+
+# 정분류율
+kmeans.table <- table(train$Creditability, credit.kmeans$cluster)
+kmeans.table
+
+(kmeans.table[1,1] + kmeans.table[2,2])/sum(kmeans.table)
+```
+
+※ 전체 변동에서 군집 간 변동이 차지하는 비율(between_SS / total_SS)이 1에 가까울수록 잘 군집화
+
+=\> between_SS / total_SS = 69.2%이므로 좋은 모델이라고 할 수 없다.
+
+=\> 정분류율 0.6671이므로 좋은 성능을 가지지 않았다고 판단
+
+```{r}
+# NbClust함수 => 
+#install.packages('NbClust')
+library(NbClust)
+
+nc <- NbClust(train.data, min.nc = 2, max.nc = 15, method = 'kmeans')
+```
+
+### 4절. 혼합 분포 군집
+
+#### 1. 개요
+
+모형 기반의 군집 방법, 데이터가 k개의 모수적 모형의 가중합으로 표현되는 모집단 모형으로부터 나왔다는 가정하에서 모수와 가중치 추정
+
+#### 2. 혼합 분모모형으로 설명할 수 있는 데이터의 형태
+
+#### 3. EM(Expectation-Maximization) 알고리즘의 진행 과정
+
+-   E-단계 : 잠재변수 Z의 기대치 계산
+
+-   M-단계 : 잠재변수 Z의 기대치를 이용하여 파라미터 추정
+
+#### 4. EM 알고리즘의 진행 과정
+
+#### 5. R을 이용한 혼합 분포 군집분석 (mclust 패키지)
+
+-   Mclust(data, G, ...)
+
+    -   data : 분석하고자 하는 데이터(수치형 변수만)
+
+    -   G : BIC를 계산할 혼합분포 클러스터의 수를 지정 (default = 1:9)
+
+```{r}
+#install.packages('mclust')
+library(mclust)
+
+mc <- Mclust(iris[,1:4],G=3)
+summary(mc,parameters = T)
+
+# 시각화
+plot.Mclust(mc)
+```
