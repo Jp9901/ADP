@@ -21,9 +21,11 @@ output: html_document
     지지도 = P(A \cap B) = \frac{A \cap B}{전체}
     $$
 
--   신뢰도(confidence)
+-   
 
-    : 연관성의 정도를 파악
+    신뢰도(confidence)
+
+    :   연관성의 정도를 파악
 
     $$
     신뢰도 = \frac{P(A \cap B)}{P(A)} = \frac{지지도}{P(A)}
