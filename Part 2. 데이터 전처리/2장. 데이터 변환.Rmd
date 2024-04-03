@@ -1,16 +1,17 @@
 ---
 title: "2장.데이터 변환"
-output: html_document
-editor_options: 
-  chunk_output_type: console
+output:
+  md_document:
+    variant: markdown_github
 ---
+
 ### 1절. 파생변수 생성
 
-#### 1. data.frame$
+#### 1. data.frame\$
+
 (생략)
 
-
-####  2. transform
+#### 2. transform
 
 ```{r transform}
 head(iris)
@@ -18,7 +19,7 @@ head(iris)
 head(transform(iris, Sum.Length = Sepal.Length + Petal.Length))
 ```
 
-####  3. within
+#### 3. within
 
 ```{r within}
 head(iris)
@@ -40,7 +41,8 @@ head(within(iris, {
 library(datasets)
 ```
 
-- 상관관계
+-   상관관계
+
 ```{r pairs}
 head(USArrests)
 
@@ -123,7 +125,7 @@ swiss.prin$sdev
 
 고유값(standard deviation의 제곱)이 1 이상인 요인들로 결정 =\> 요인의 수를 2개로 결정
 
-ii.  scree plot
+ii. scree plot
 
 ```{r n_factors2}
 plot(swiss.prin, type = 'l')
@@ -177,7 +179,8 @@ iris$SL_new <- scale(iris$Sepal.Length, center = Min, scale = Max-Min)
 head(iris)
 ```
 
-ii.  사용자 정의 함수
+ii. 사용자 정의 함수
+
 ```{r min_max_ft}
 normalize <- function(x){
   return((x-min(x))/(max(x)-min(x)))
@@ -189,4 +192,3 @@ num <- c(50:500)
 num_new <- normalize(num)
 head(num_new)
 ```
-
