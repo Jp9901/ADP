@@ -1,6 +1,8 @@
 ---
 title: "1장. 데이터 분할과 성과분석"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ### 1절. 데이터 분할

@@ -1,6 +1,8 @@
 ---
+output:
 title: "2장. 분류 분석(2)"
-output: html_document
+  md_document:
+    variant: markdown_github
 ---
 
 ```{r setup}

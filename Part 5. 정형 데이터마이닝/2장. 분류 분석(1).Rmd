@@ -1,6 +1,8 @@
 ---
 title: "2장. 분류 분석(1)"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ### 1절. 로지스틱 회귀분석
