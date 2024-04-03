@@ -45,7 +45,7 @@ crude[[1]]$content # 문서의 내용 확인
 
 -   tm_map(x, FUN) : 텍스트 전처리
 
-    -    FUN 함수\
+    -   FUN 함수\
         tolower : 소문자로 변환\
         stemDocument : 어근만 남기기\
         stripDocument : 공백제거\
@@ -85,7 +85,7 @@ txt2
 [[A-z]] : 알파벳\
 [[:alnum:]] : 영문자/숫자
 
-#### 2. 자연어 처리  ~~**\# KoNLP 패키지**~~
+#### 2. 자연어 처리 ~~**\# KoNLP 패키지**~~
 
 한글 자연어 처리 분석 -\> KoNLP 패키지 =\> 자연어 처리 및 텍스트 마이닝
 
@@ -129,7 +129,7 @@ completion
 
 ### 2절. Term-Document Matrix
 
-TDM(Term-Document Matrix) : 전처리된 데이터에서 각 문서와 단어 간의 사용 여부를 이용해 만들어진 matrix \
+TDM(Term-Document Matrix) : 전처리된 데이터에서 각 문서와 단어 간의 사용 여부를 이용해 만들어진 matrix\
 =\> 문서마다 등장한 단어의 빈도수를 쉽게 파악 가능
 
 #### 1. R을 활용한 TDM 구축하기 **\# tm패키지**
@@ -152,7 +152,7 @@ dim(TDM.news) # 6개의 뉴스 제목에서 25개의 단어 추출
 inspect(TDM.news[1:5,]) # 각 기사에서의 단어 빈도
 ```
 
-※ sparsity : 전체 행렬에서 0이 차지하는 비중 \
+※ sparsity : 전체 행렬에서 0이 차지하는 비중\
 (25/30 = 83%)
 
 #### 2. TDM을 활용한 분석 및 시각화
