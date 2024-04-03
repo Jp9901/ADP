@@ -1,6 +1,8 @@
 ---
 title: "1장. 텍스트마이닝"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ### 1절. 데이터 전처리
