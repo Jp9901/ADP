@@ -1,6 +1,6 @@
 # ADP
-ADP 실기 - R (markdown)
-설명을 위해 마크다운으로 작성
+ADP 실기 - R (markdown) <br/>
+(설명을 위해 마크다운으로 작성)
 <br/>
 ***
 
