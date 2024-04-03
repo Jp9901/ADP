@@ -1,6 +1,8 @@
 ---
 title: "4장. 분산분석(ANOVA)"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ### 1절. 일원배치 분산분석 (one-way ANOVA)

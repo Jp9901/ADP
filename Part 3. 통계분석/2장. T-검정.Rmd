@@ -1,6 +1,8 @@
 ---
 title: "2장. T-검정(T-test)"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ### 1절. 일표본 T-검정 (One Sample T-Test)

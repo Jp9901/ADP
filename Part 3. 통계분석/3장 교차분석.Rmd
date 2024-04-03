@@ -1,6 +1,8 @@
 ---
 title: "3장. 교차분석"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ### 1절. 교차분석 개념

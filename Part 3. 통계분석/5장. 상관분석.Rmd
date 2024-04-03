@@ -1,6 +1,8 @@
 ---
 title: "5장. 상관분석"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ### 1절. 상관분석의 개념
