@@ -1,0 +1,214 @@
+---
+title: "생존분석"
+output:
+  md_document:
+    variant: markdown_github
+---
+
+```{r}
+rm(list = ls())
+```
+
+### 생존분석
+
+\# **survival 패키지**
+
+#### 1. 생존분석 기본 함수
+
+```{r}
+#install.packages('asaur')
+library(survival)
+library(dplyr)
+library(ggplot2)
+```
+
+-   Surv(time, time2, event, type, origin)
+
+    -   time,time2 : [0\~time) or [time,time2)
+
+    -   event : (alive,dead) = (0,1) or (FALSE,TRUE) or (1,2)
+
+    -   type : 중도절단 종류 ('right','left','counting','interval',...)
+
+![](images/스크린샷%202024-04-08%2015.07.10.png){width="372"}
+
+```{r}
+t1 <- c(2,1,2,4) # 관측 시작 time
+t2 <- c(8,5,10,9) # 관측 종료 time
+st <- c(1,0,0,1) # status (0=censoring / 1=dead)
+Surv(time=t1, time2=t2, event=st) # type = 'counting'
+
+t3 <- c(6,4,8,5) # 위와 동일(관측 시작 time을 동일하게 고정)
+Surv(t3,st)
+```
+
+-   survfit(formula)
+
+    :생존 함수
+
+    -   formula : Surv(time,event) \~ covariates
+
+        ※ covariates는 범주형 변수가 적합.\
+        하지만 대상의 수가 많지 않아 통계적으로 유의x or 범주형 변수의 변환 기준을 판단할 때 =\> 연속형 변수 이용
+
+```{r}
+survfit(Surv(t1,t2,st)~1)
+summary(survfit(Surv(t1,t2,st)~1))
+```
+
+-   survdiff(formula, data, subset, na.action, rho=0, timefix=TRUE)\
+    : log-rank test (생존 확률이 관심있는 변수에 따라 차이가 있는지 검정하는 방법)
+
+    -   subset : 조건에 맞는 행 추출
+
+    -   na.action : 결측치 처리
+
+    -   rho, timefix : *(생략)*
+
+H0 : 두 집단의 위험함수가 동일하다.
+
+```{r}
+head(lung)
+survdiff(Surv(time,status)~sex,data=lung)
+```
+
+=\> p-value \< 0.05이므로 귀무가설 '두 집단의 위험함수가 동일하다'를 기각.
+
+#### 2. Kaplan-Meier
+
+-   Kaplan Meier curve
+
+```{r}
+plot(survfit(Surv(t1,t2,st)~1),
+     xlab='time',ylab='survival prob')
+
+plot(survfit(Surv(t3,st)~1),
+     xlab='time',ylab='survival prob')
+```
+
+=\> 시작지점이 달라져 두 그래프가 달라짐. 하지만 같은 그래프라 생각해도 무관
+
+#### 예제
+
+-   EDA
+
+```{r}
+library(asaur) # Applied Survival Analysis Using R
+
+data("pharmacoSmoking")
+head(pharmacoSmoking)
+```
+
+```{r}
+# 시간에 대한 히스토그램
+with(pharmacoSmoking,hist(ttr))
+```
+
+=\> 0 부근 : 초기 포기자, 200 부근 : 연구 종료에 따른 censoring
+
+```{r}
+# 재발여부(0:censoring / 1:치료) 비율
+with(pharmacoSmoking,table(relapse))
+with(pharmacoSmoking,table(relapse,ttr))
+```
+
+=\> 연구 종료를 제외하면 censoring이 없다.
+
+※ 주의사항 : 연구결과가 좋더라도 [치료군의 중도탈락이 의미가 있을 정도로 많다면]{.underline} 그 결과는 신뢰하지 않는 것이 바람직하다. (중도탈락도 중요한 결과를 갖지만 보통 결과에 제시하지 않음.)
+
+-   생존분석
+
+```{r}
+# grp에 따른 생존분석
+df1 <- survfit(Surv(ttr,relapse)~grp, data=pharmacoSmoking)
+df1
+```
+
+```{r}
+summary(df1, times=c(0,50,100,150)) # 원하는 시간에서의 생존확률
+```
+
+```{r}
+plot(df1, col=c('red','blue')) # conf.int=T : 신뢰구간
+legend('topright',lty=1,col=c('red','blue'),
+       legend = c('combination','patch only'))
+```
+
+※ 비례위험가정 \\
+
+:   위험비(집단 A와 집단 B의 위험함수의 비율)가 일정하게 유지된다.
+
+```{r}
+data("pancreatic2")
+df2 <- survfit(Surv(os,status)~stage, data = pancreatic2)
+plot(df2, col=c('red','blue'))
+legend("topright",lty=1, col=c("red","blue"),legend = c("Locally Advanced","Metastatic"))
+```
+
+=\> 400부근과 600부근에서 비례위험 가정 위배. 따라서 시간에 대해 별도의 배려를 해야한다.
+
+#### 2. Cox 분석
+
+```{r}
+head(pharmacoSmoking)
+```
+
+```{r}
+# grp에 따른 생존 확률
+df <- coxph(Surv(ttr,relapse)~grp,data=pharmacoSmoking)
+summary(df)
+```
+
+=\> grp = patchOnly 는 grp = combination일 때의 Hazard Ratio가 1.8313배이다.
+
+#### 예제
+
+-   Martingale residual
+
+(Cox분석에서 연속변수의 처리법)
+
+```{r}
+# age변수
+with(pharmacoSmoking, hist(age))
+shapiro.test(pharmacoSmoking$age)
+```
+
+=\> p-value\>0.05이므로 데이터가 정규 분포를 따른다고 할 수 있다.
+
+```{r}
+cp1 <- coxph(Surv(ttr,relapse)~1,data=pharmacoSmoking)
+pharmacoSmoking$resid <- residuals(cp1, type = 'martingale')
+pharmacoSmoking %>% 
+  ggplot(aes(age,resid)) + 
+  geom_point()+geom_smooth() + 
+  theme_classic() + 
+  geom_hline(yintercept=0,col='red') +
+  geom_vline(xintercept = c(34,64),lty=3,col='blue') +
+  geom_vline(xintercept = c(49),lty=2,col='blue')
+```
+
+resid=0은 평균 hazard, +값은 hazard\>0, -값은 반대
+
+=\> 데이터에서 resid에 따라 age를 2개의 그룹(ageGroup2)과 4개의 그룹(ageGroup4)으로 범주화시킴
+
+```{r}
+# longestNoSmoke 변수
+with(pharmacoSmoking, hist(longestNoSmoke))
+with(pharmacoSmoking, hist(log(longestNoSmoke+1)))
+pharmacoSmoking %>% 
+  ggplot(aes(log(longestNoSmoke+1),resid))+geom_point()+geom_smooth()+theme_classic()+geom_hline(yintercept = 0,col='red')
+```
+
+=\> 90% 신뢰구간이 0을 완전히 벗어나지 않으므로 연속형 변수 가능
+
+※ 해당 covariate가 주요 변수 or 대상자 수가 충분하여 범주화해도 통계적 유의성 유지=\> 범주화
+
+```{r}
+cp2 <- coxph(Surv(ttr,relapse)~log(longestNoSmoke+1),data = pharmacoSmoking)
+summary(cp2)
+```
+
+```{r}
+cp3 <- coxph(Surv(ttr,relapse)~cut_number(longestNoSmoke,n = 3),data = pharmacoSmoking)
+summary(cp3)
+```
