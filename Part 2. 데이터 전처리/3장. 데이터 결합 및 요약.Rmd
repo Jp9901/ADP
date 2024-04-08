@@ -34,6 +34,16 @@ custom_age <- data.frame(age = c(49,40,44,25,48,24))
 
 #### 3. merge
 
+-   merge(x,y, by, by.x,by.y, all=FALSE, all.x,all.y)
+
+    -   by : 병합의 기준이 되는 칼럼
+
+    -   by.x, by.y : 칼럼의 이름이 서로 다른 경우, 인자 지정
+
+    -   all : 기준 칼럼에 대한 공통 값이 어느 한 쪽에 없는 경우 처리를 위한 인자(FALSE : 공통 값만 병합 / TRUE : 공통 값을 가지지 있는 행에 대해 NA값)
+
+    -   all.x, all.y : x or y에 공통된 값이 없지만 해당 데이터의 모든 행이 결과 데이터에 포함되도록 할 때 사용 (all.x=TRUE : x데이터의 모든 행 결과 포함 / all.y=TRUE : y데이터의 모든 행 결과 포함)
+
 ```{r merge.setup}
 head(id_name)
 id_number <- data.frame(id = c(4,5,6,7,8),
@@ -71,6 +81,10 @@ merge(id_name,id_number,by='id', all.y = TRUE)
 
 : 특정 칼럼을 기준으로 데이터를 그룹지어 집계함수 적용
 
+-   aggregate(x, by, FUN)
+
+-   aggregate(formula, data, FUN)
+
 ```{r aggregate}
 aggregate(Sepal.Width~Species, iris, mean)
 aggregate(cbind(Sepal.Width, Petal.Width)~Species, iris, mean)
@@ -82,9 +96,13 @@ aggregate(cbind(Sepal.Width, Petal.Width)~Species, iris, mean)
 
 #### 3. prob.table
 
+-   prop.table(table 객체)
+
+-   prop.table(table 객체, 1 or 2) \# 1 : 행별 상대도수 / 2: 열별 상대도수
+
 ※ prop.table의 인자로는 table 형태의 객체
 
-```{r prob.table}
+```{r prop.table}
 data("Titanic")
 Titanic <- as.data.frame(Titanic)
 str(Titanic)
@@ -94,9 +112,11 @@ prop.table(table(Titanic$Age,Titanic$Survived))
 
 #### 4. subset
 
--   subset : 조건
+-   subset(data, subset, select=c(var1,...))
 
--   select : 특정 열
+    -   subset : 조건
+
+    -   select : 특정 열
 
 ```{r subset}
 subset(iris,
@@ -110,7 +130,8 @@ subset(iris,
 
 : 데이터의 행/열 방향으로 함수를 적용한 뒤 그 결과를 벡터/배열/리스트로 반환
 
--   margin : 1 =\> 행 방향, 2 =\> 열 방향
+-   apply(X, MARGIN, FUN
+    -   MARGIN : 1 =\> 행 방향, 2 =\> 열 방향
 
 ```{r apply}
 apply(iris[,1:4],2,mean)

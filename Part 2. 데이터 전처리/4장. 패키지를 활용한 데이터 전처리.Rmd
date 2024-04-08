@@ -17,6 +17,8 @@ library(plyr)
 
 : 배열을 입력받아 데이터프레임으로 반환
 
+-   adply(data, margins, fun)
+
 ```{r adply}
 data(iris)
 adply(iris,1,
@@ -33,8 +35,9 @@ adply(iris,1,
 
 : 데이터 프레임 -\> 데이터 프레임
 
--   .(variables) : 데이터를 그룹화할 기준이 되는 변수
--   ddply-func : ddply 내부함수
+-   ddply(data, .variables, ddply-func, fun)
+    -   .(variables) : 데이터를 그룹화할 기준이 되는 변수
+    -   ddply-func : ddply 내부함수
 
 ```{r ddply1}
 data(iris)
@@ -93,8 +96,10 @@ ddply(baseball, .(id), subset, year==max(year), select=c('id','year','stint','te
 #### 1. dplyr 패키지
 
 ```{r dplyr}
-library(dplyr)
+library(dplyr) 
 ```
+
+df %\>%
 
 #### 2. filter
 
