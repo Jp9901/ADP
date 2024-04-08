@@ -56,8 +56,11 @@ survfit(Surv(t1,t2,st)~1)
 summary(survfit(Surv(t1,t2,st)~1))
 ```
 
--   survdiff(formula, data, subset, na.action, rho=0, timefix=TRUE)\
-    : log-rank test (생존 확률이 관심있는 변수에 따라 차이가 있는지 검정하는 방법)
+-   
+
+    survdiff(formula, data, subset, na.action, rho=0, timefix=TRUE)\\
+
+    :   log-rank test (생존 확률이 관심있는 변수에 따라 차이가 있는지 검정하는 방법)
 
     -   subset : 조건에 맞는 행 추출
 
