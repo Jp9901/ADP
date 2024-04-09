@@ -43,39 +43,44 @@ negative <- readLines('negative.txt', encoding = 'UTF-8')
 head(negative)
 ```
 
--   긍정어/부정어 비교 함수
+-   긍정어/부정어
 
 ```{r}
-sentimental = function(sentences, positive, negative){
-  scores = laply(sentences, function(sentence, positive, negative){
-    sentence = gsub('[[:punct:]]', '', sentence) # 문장부호 제거
-    sentence = gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
-    sentence = gsub('\\d+', '', sentence) # 숫자 제거
+sentimental <- function(sentences, positive, negative){
+  scores <- laply(sentences, function(sentence, positive, negative){
+    sentence <- gsub('[[:punct:]]', '', sentence) # 문장부호 제거
+    sentence <- gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
+    sentence <- gsub('\\d+', '', sentence) # 숫자 제거
     
-    word.list = str_split(sentence, '\\s+') # 공백 기준으로 단어 생성
-    words = unlist(word.list)
+    word.list <- str_split(sentence, '\\s+') # 공백 기준으로 단어 생성
+    words <- unlist(word.list)
     
-    pos.matches = match(words, positive) # words와 positive 사전과 매칭
-    neg.matches = match(words, negative)
+    pos.matches <- match(words, positive) # words와 positive 사전과 매칭
+    neg.matches <- match(words, negative)
     
-    pos.matches = !is.na (pos.matches)
-    neg.matches = !is.na (neg.matches)
+    pos_word <- list(word.list[word.list %in% positive])
+    neg_word <- list(word.list[word.list %in% negative])
     
-    score = sum(pos.matches) - sum(neg.matches) # 점수=(긍정-부정)
+    pos.matches <- !is.na (pos.matches)
+    neg.matches <- !is.na (neg.matches)
+    
+    score <- sum(pos.matches) - sum(neg.matches) # 점수=(긍정-부정)
+    
     return(score)
   },positive, negative)
   
-  scores.df = data.frame(score=scores, text=sentences)
-  return(scores.df)
+  senti.df <- data.frame(text=sentences, score=scores)
+  return(senti.df)
 }
 ```
 
 ```{r}
-result = sentimental(txt, positive,negative)
+result <- sentimental(txt[1:100], positive,negative)
 
 result$remark[result$score >= 1] <- '긍정'
 result$remark[result$score == 0] <- '중립'
 result$remark[result$score < 0] <- '부정'
+
 
 table(result$remark)
 ```
@@ -89,4 +94,25 @@ prop.table(sentimental_result)
 pie(sentimental_result, main = '감성분석 결과',
     col=c('blue','red','green'),
     family="AppleGothic")
+```
+
+```{r warning=FALSE}
+library(wordcloud)
+library(tidyverse)
+library(tidytext)
+
+
+positive.df <- data.frame(word = positive, score=1)
+negative.df <- data.frame(word = negative, score=-1) 
+
+result %>% 
+  unnest_tokens(output = word, input = text,
+                token = "words") %>% 
+  inner_join(rbind(positive.df,negative.df)) %>%
+  count(word, remark, sort = TRUE) %>% 
+  pivot_wider(names_from = remark, values_from = n, values_fill = 0)  %>%
+  column_to_rownames(var = "word") %>% 
+  comparison.cloud(colors = c('blue','red'),
+                   family="AppleGothic", 
+                   max.words=20)
 ```
