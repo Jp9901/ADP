@@ -1,0 +1,69 @@
+---
+title: "인터랙티브 그래프"
+output: html_document
+---
+
+### 인터랙티브 그래프
+
+#### 1. 인터랙티브 패키지
+
+-   plotly 패키지
+
+```{r}
+#install.packages("plotly")
+library(plotly)
+```
+
+-   인터랙티브 그래프
+
+```{r}
+library(ggplot2)
+p <- ggplot(data = mpg, aes(x = displ, y = hwy, col = drv)) + geom_point()
+
+# 인터랙티브 그래프
+ggplotly(p)
+```
+
+#### 2. 인터랙티브 시계열 그래프
+
+-   dygraphs 패키지
+
+```{r}
+#install.packages("dygraphs")
+library(dygraphs)
+```
+
+```{r}
+economics <- ggplot2::economics
+head(economics)
+```
+
+```{r}
+library(xts)
+eco <- xts(economics$unemploy, order.by = economics$date)
+head(eco)
+```
+
+-   인터랙티브 시계열 그래프
+
+```{r}
+# 인터랙티브 시계열 그래프
+dygraph(eco)
+```
+
+```{r}
+# 날짜 범위 선택
+dygraph(eco) %>% dyRangeSelector()
+```
+
+```{r}
+# 여러 값 표현
+eco_a <- xts(economics$psavert, order.by = economics$date) # 저축률
+eco_b <- xts(economics$unemploy/1000, order.by = economics$date) # 실업자 수
+
+eco2 <- cbind(eco_a, eco_b)
+colnames(eco2) <- c("psavert", "unemploy")
+head(eco2)
+
+dygraph(eco2) %>% dyRangeSelector()
+```

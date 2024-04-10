@@ -9,15 +9,18 @@ rm(list=ls())
 
 ### 지도 시각화
 
+#### 패키지
+
 -   ggiraphExtra 패키지
 
-ggplot2 버전 3.5.0이상
-
-(이상 있을 시 ggplot2 패키지 제거 후 재설치)
+※ ggplot2 버전 3.5.0이상 필요\
+(오류 시 ggplot2 패키지 제거 후 재설치)
 
 ```{r}
 library(ggiraphExtra)
 ```
+
+#### 예제
 
 ```{r}
 data("USArrests")
