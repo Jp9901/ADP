@@ -191,3 +191,26 @@ plot(Nile.forecast)
 파란 영역 : 80% 신뢰구간
 
 회색 영역 : 95% 신뢰구간
+
+-   모형 진단(모형 타당성 검정)
+
+1.  잔차가 백색 잡음(white noise) 검정 \
+    (모형의 잔차가 불규칙적이고, 독립적)
+
+```{r}
+# 1) 자기상관함수에 의한 모형 진단
+tsdiag(Nile.arima)
+```
+
+=\> ACF(자기상관함수)에서 모든 lag가 파란선 안에 들어와있음\
+= 자기 상관관계 없음 (불규칙성)
+
+=\> p-value 값이 0 이상에 분포 \
+= 모델 적합
+
+```{r}
+# 2) Box-Ljung에 의한 잔차항 모형 진단
+Box.test(Nile.arima$residuals, type = 'Ljung')
+```
+
+=\> [p-value \> 0.05]{.underline}이므로 모델 적합([모형이 통계적으로 적절]{.underline})

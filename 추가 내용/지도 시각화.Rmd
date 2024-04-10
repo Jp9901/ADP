@@ -1,0 +1,63 @@
+---
+title: "지도 시각화"
+output: html_document
+---
+
+```{r}
+rm(list=ls())
+```
+
+### 지도 시각화
+
+-   ggiraphExtra 패키지
+
+ggplot2 버전 3.5.0이상
+
+(이상 있을 시 ggplot2 패키지 제거 후 재설치)
+
+```{r}
+library(ggiraphExtra)
+```
+
+```{r}
+data("USArrests")
+str(USArrests)
+head(USArrests)
+```
+
+```{r}
+library(tibble)
+# 행 이름을 state 변수로 바꿔 데이터 프레임 생성
+crime <- rownames_to_column(USArrests, var = "state")
+
+# 지도 데이터와 동일하게 맞추기 위해 state의 값을 소문자로 수정
+crime$state <- tolower(crime$state)
+
+str(crime)
+```
+
+-   미국 주 지도 데이터
+
+```{r}
+library(ggplot2)
+states_map <- map_data('state')
+str(states_map)
+```
+
+```{r}
+# 단계 구분도
+ggChoropleth(data = crime, # 지도에 표현할 데이터
+             aes(fill = Murder, # 색깔로 표현할 변수
+                 map_id = state), # 지역 기준 변수
+             map = states_map) # 지도 데이터
+```
+
+-   인터랙티브 단계 구분도
+
+```{r}
+ggChoropleth(data = crime, # 지도에 표현할 데이터
+             aes(fill = Murder, # 색깔로 표현할 변수
+                 map_id = state), # 지역 기준 변수
+             map = states_map, # 지도 데이터
+             interactive = T) # 인터랙티브
+```
