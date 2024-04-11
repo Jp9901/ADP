@@ -13,8 +13,11 @@ rm(list=ls())
 
 #### 1. 시계열 데이터
 
--   ts(data, start, frequency)\
-    : 시계열 데이터로 변환
+-   
+
+    ts(data, start, frequency)\\
+
+    :   시계열 데이터로 변환
 
     -   start : 시작 날짜
 
@@ -24,8 +27,11 @@ rm(list=ls())
 ts(1:10, frequency = 4, start = c(1959, 2))
 ```
 
--   getSymbols(Symbols, src, from, to) \# quantmod 패키지\
-    : 야후 파이낸스 데이터 불러오기
+-   
+
+    getSymbols(Symbols, src, from, to) \# quantmod 패키지\\
+
+    :   야후 파이낸스 데이터 불러오기
 
     -   Symbols : 기업
 
@@ -43,8 +49,11 @@ head(META)
 plot(META)
 ```
 
--   aggregate(x, nfrequency, FUN)\
-    : 서로 다른 주기의 데이터에 대해 일련의 연산 수행하여 주기를 맞춤
+-   
+
+    aggregate(x, nfrequency, FUN)\\
+
+    :   서로 다른 주기의 데이터에 대해 일련의 연산 수행하여 주기를 맞춤
 
     -   nfrequency : 연산 단위 (1:년도별 / 4:분기별,...)
 
@@ -74,8 +83,11 @@ plot(ldeaths)
 
 #### 2. 시계열 분해
 
--   decompose(x, type=c('additive','multiplicative'),filter=NULL)\
-    : 이동평균선을 이용해 시계열을 계절성, 추세, 불규칙 성분으로 분해.
+-   
+
+    decompose(x, type=c('additive','multiplicative'),filter=NULL)\\
+
+    :   이동평균선을 이용해 시계열을 계절성, 추세, 불규칙 성분으로 분해.
 
     -   x : 시계열
 
@@ -154,10 +166,13 @@ pacf(Nile.diff_2, lag.max = 20, plot = FALSE)
 
 =\> lag 9에서 절단되므로 ARIMA(8,0)
 
-#### 4. ARIMA 모형 
+#### 4. ARIMA 모형
 
--   auto.arima(x) \# forecast 패키지\
-    : 자동으로 ARIMA(p,d,q) 설정
+-   
+
+    auto.arima(x) \# forecast 패키지\\
+
+    :   자동으로 ARIMA(p,d,q) 설정
 
 ```{r}
 #install.packages('forecast')
@@ -177,8 +192,11 @@ Nile.arima <- arima(Nile, order = c(1,1,1))
 Nile.arima
 ```
 
--   forecaset(object, ...) \# forecast 함수\
-    : arima 결과를 활용한 forecast 예측
+-   
+
+    forecaset(object, ...) \# forecast 함수\\
+
+    :   arima 결과를 활용한 forecast 예측
 
 ```{r}
 # 10개년도 예측
@@ -194,7 +212,7 @@ plot(Nile.forecast)
 
 -   모형 진단(모형 타당성 검정)
 
-1.  잔차가 백색 잡음(white noise) 검정 \
+1.  잔차가 백색 잡음(white noise) 검정\
     (모형의 잔차가 불규칙적이고, 독립적)
 
 ```{r}
@@ -205,7 +223,7 @@ tsdiag(Nile.arima)
 =\> ACF(자기상관함수)에서 모든 lag가 파란선 안에 들어와있음\
 = 자기 상관관계 없음 (불규칙성)
 
-=\> p-value 값이 0 이상에 분포 \
+=\> p-value 값이 0 이상에 분포\
 = 모델 적합
 
 ```{r}
