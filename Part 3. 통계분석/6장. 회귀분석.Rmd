@@ -195,11 +195,11 @@ step(lm_result, direction = 'backward')
 
 ### 추가
 
-#### 1. 릿지/라쏘 회귀분석
+#### 1. 정규화 회귀분석(릿지/라쏘 / 엘라스틱넷)
 
 -   glmnet(x, y, alpha) \# glmnet 패키지
 
-    -   alpha : 0=릿지회귀 / 1=라쏘회귀
+    -   alpha : 0=릿지회귀 / 1=라쏘회귀 / 0.5=엘라스틱넷
 
 -   릿지회귀
 
@@ -222,17 +222,13 @@ test.x <- scale(Cars93[-train_idx,c('EngineSize','RPM','Weight')])
 train.y <- scale(Cars93[train_idx,'Price'])
 test.y <- scale(Cars93[-train_idx,'Price'])
 
-
 # 릿지 회귀분석
 ridge.lm <- glmnet(train.x,train.y, alpha=0)
 plot(ridge.lm, xvar="lambda")
 ```
 
--   
-
-    cv.glmnet(x,y,alpha)\\
-
-    :   교차검증방법으로 적절한 lambda 선정
+-   cv.glmnet(x,y,alpha)\
+    : 교차검증방법으로 적절한 lambda 선정
 
 ```{r}
 set.seed(1)
@@ -246,12 +242,20 @@ plot(cv.ridge)
 -   예측
 
 ```{r}
-pred_y <- predict(cv.ridge, newx = test.x, s='lambda.min')
+# case 1.
+ridge.lm_opt <- glmnet(train.x,train.y, alpha=0, lambda = best_lambda)
+pred_y1 <- predict(ridge.lm_opt, newx = test.x)
+pred_y1
+```
+
+```{r}
+# case 2.
+pred_y2 <- predict(cv.ridge, newx = test.x, s='lambda.min')
 
 # test Y 역 표준화 후 plot
 plot(test.y * attr(test.y, 'scaled:scale') + attr(test.y, 'scaled:center'), ylab = "y")
 # 예측값 역 표준화 후 plot
-lines(pred_y * attr(test.y, 'scaled:scale') + attr(test.y, 'scaled:center'), col="red") 
+lines(pred_y1 * attr(test.y, 'scaled:scale') + attr(test.y, 'scaled:center'), col="red") 
 ```
 
 #### 2. 다항식 회귀분석
@@ -289,7 +293,7 @@ lm(mag~poly(lat, 3, raw = T), data=quakes)
 -   boxcox(object) \# MASS 패키지\
     : 정규분포가 아닌 데이터를 정규분포에 가깝게 만들거나 데이터의 분산을 안정시켜 정상 데이터로 변환
 
-```{r setup}
+```{r}
 x <- 1:100
 set.seed(5)
 norm <- rnorm(100, 0, 5)
