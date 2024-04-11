@@ -195,7 +195,7 @@ step(lm_result, direction = 'backward')
 
 ### 추가
 
-#### 1.  릿지/라쏘 회귀분석
+#### 1. 릿지/라쏘 회귀분석
 
 -   glmnet(x, y, alpha) \# glmnet 패키지
 
@@ -228,8 +228,11 @@ ridge.lm <- glmnet(train.x,train.y, alpha=0)
 plot(ridge.lm, xvar="lambda")
 ```
 
--   cv.glmnet(x,y,alpha)\
-    : 교차검증방법으로 적절한 lambda 선정
+-   
+
+    cv.glmnet(x,y,alpha)\\
+
+    :   교차검증방법으로 적절한 lambda 선정
 
 ```{r}
 set.seed(1)
@@ -260,27 +263,97 @@ data("quakes")
 lm(mag~lat+long, data=quakes)
 ```
 
--   $
+-   $$
     y = \beta_0 + \beta_1(x_1+x_2)+\epsilon
-    $
+    $$
 
 ```{r}
 lm(mag~I(lat+long), data=quakes)
 ```
 
--   $
-    y=\beta_0 + \beta_1 x_1^2+\beta_2 x_2 + \epsilon
-    $
+-   $$y=\beta_0 + \beta_1 x_1^2+\beta_2 x_2 + \epsilon $$
 
 ```{r}
 lm(mag~I(lat^2)+long, data = quakes)
 ```
 
--   $
-    y=\beta_0 +\beta_1 x + \beta_2 x^2 + \beta_3 x^3 + \cdots + \epsilon
-    $
+-   $$y=\beta_0 +\beta_1 x + \beta_2 x^2 + \beta_3 x^3 + \cdots + \epsilon$$
 
 ```{r}
 lm(mag~lat+I(lat^2)+I(lat^3), data = quakes)
 lm(mag~poly(lat, 3, raw = T), data=quakes)
+```
+
+#### 3. 곡선 데이터 적합
+
+-   boxcox(object) \# MASS 패키지\
+    : 정규분포가 아닌 데이터를 정규분포에 가깝게 만들거나 데이터의 분산을 안정시켜 정상 데이터로 변환
+
+```{r setup}
+x <- 1:100
+set.seed(5)
+norm <- rnorm(100, 0, 5)
+y <- (x+norm)^(-.7)
+plot(x, y)
+```
+
+```{r}
+lm_norm <- lm(y~x)
+summary(lm_norm)
+```
+
+=\> R\^2 = 0.5335로 설명력이 낮은 것을 알 수 있다.
+
+```{r}
+library(MASS)
+bc_norm <- boxcox(lm_norm)
+lambda <- bc_norm$x[which.max(bc_norm$y)]
+
+plot(x,y^lambda)
+
+summary(lm(y^lambda~x))
+```
+
+=\> R\^2=0.9731로 설명력이 아주 높아졌다.
+
+-   로그변환
+
+```{r setup}
+pl <- iris$Petal.Length
+pw <- iris$Petal.Width
+pl_r <- 10^pl
+pw_r <- 10^pw
+```
+
+1.  log(y) = x
+
+```{r}
+plot(pl, pw_r)
+```
+
+```{r}
+plot(pl, log(pw_r))
+summary(lm(log(pw_r) ~ pl))
+```
+
+2.  y = log(x)
+
+```{r}
+plot(pl_r, pw)
+```
+
+```{r}
+plot(log(pl_r),pw)
+summary(lm(pw ~ I(log(pl_r))))
+```
+
+3.  log(y) = log(x)
+
+```{r}
+plot(pl_r, pw_r)
+```
+
+```{r}
+plot(log(pl_r), log(pw_r))
+summary(lm(log(pw_r) ~ I(log(pl_r))))
 ```
