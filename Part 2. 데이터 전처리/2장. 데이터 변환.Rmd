@@ -27,6 +27,14 @@ head(iris)
 head(transform(iris, Sum.Length = Sepal.Length + Petal.Length))
 ```
 
+~~dummies 패키지~~ (이제 안 됨)
+
+:   dummy.data.frame(data) : 더미변수로 변환
+
+```{r}
+#install.packages('dummies')
+```
+
 #### 4. within
 
 -   within(데이터, 표현식)
@@ -56,6 +64,7 @@ head(within(iris, {
 -   princomp(data, cor=FALSE, scores=TRUE)
 
     -   cor : FALSE=\>공분산행렬(측정 단위 반영) / TRUE=\>상관행렬(측정 단위 표준화)
+    -   scores : 각 주성분의 점수를 계산해야 하는지
 
 ```{r setup, include=FALSE}
 library(datasets)
@@ -166,7 +175,9 @@ Cumulative Var : 요인별 해당 값의 누적치 =\> 2개의 요인은 전체 
 
 ### 3절. 표준화와 정규화
 
-#### 1.표준화
+#### 1. 표준화
+
+표준화 : 데이터의 분포를 정규분포로 바꿈(평균=0, 표준편차=1)
 
 -   scale(data, center = TRUE, scale = TRUE)
     -   center : 데이터에서 벡터의 평균을 뱀
@@ -188,6 +199,8 @@ head(test.cars)
 ```
 
 #### 2. 정규화
+
+정규화 : 데이터 범위의 차이를 왜곡하지 않고 공통 척도로 변경하는 것 =\> [0,1] 범위의 값
 
 -   min-max 정규화
 

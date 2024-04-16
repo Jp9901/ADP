@@ -1,0 +1,122 @@
+---
+title: "감성분석"
+output:   
+  md_document:
+    variant: markdown_github
+---
+
+```{r}
+rm(list = ls())
+```
+
+### 감성분석
+
+#### 1. 데이터 준비
+
+군산대 감성사전 - neg_pol_word.txt, pos_pol_word.txt
+
+(텍스트파일에서 출처, 단어 수, 극성 제거하고 저장)
+
+<https://github.com/park1200656/KnuSentiLex>
+
+#### 2. 감성분석
+
+```{r}
+library(plyr)
+library(stringr)
+```
+
+```{r}
+# data
+txt <- readLines('movie_review.txt')
+head(txt)
+length(txt)
+```
+
+-   긍정/부정 사전
+
+```{r}
+positive <- readLines('positive.txt', encoding = 'UTF-8')
+head(positive)
+
+negative <- readLines('negative.txt', encoding = 'UTF-8')
+head(negative)
+```
+
+-   긍정어/부정어
+
+```{r}
+sentimental <- function(sentences, positive, negative){
+  scores <- laply(sentences, function(sentence, positive, negative){
+    sentence <- gsub('[[:punct:]]', '', sentence) # 문장부호 제거
+    sentence <- gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
+    sentence <- gsub('\\d+', '', sentence) # 숫자 제거
+    
+    word.list <- str_split(sentence, '\\s+') # 공백 기준으로 단어 생성
+    words <- unlist(word.list)
+    
+    pos.matches <- match(words, positive) # words와 positive 사전과 매칭
+    neg.matches <- match(words, negative)
+    
+    pos_word <- list(word.list[word.list %in% positive])
+    neg_word <- list(word.list[word.list %in% negative])
+    
+    pos.matches <- !is.na (pos.matches)
+    neg.matches <- !is.na (neg.matches)
+    
+    score <- sum(pos.matches) - sum(neg.matches) # 점수=(긍정-부정)
+    
+    return(score)
+  },positive, negative)
+  
+  senti.df <- data.frame(text=sentences, score=scores)
+  return(senti.df)
+}
+```
+
+```{r}
+result <- sentimental(txt[1:100], positive,negative)
+
+result$remark[result$score >= 1] <- '긍정'
+result$remark[result$score == 0] <- '중립'
+result$remark[result$score < 0] <- '부정'
+
+
+table(result$remark)
+```
+
+-   시각화
+
+```{r}
+sentimental_result = table(result$remark)
+prop.table(sentimental_result)
+
+pie(sentimental_result, main = '감성분석 결과',
+    col=c('blue','red','green'),
+    family="AppleGothic")
+```
+
+```{r warning=FALSE}
+library(wordcloud)
+library(tidyverse)
+library(tidytext)
+
+
+positive.df <- data.frame(word = positive, score=1)
+negative.df <- data.frame(word = negative, score=-1) 
+
+result %>% 
+  unnest_tokens(output = word, input = text,
+                token = "words") %>% 
+  inner_join(rbind(positive.df,negative.df)) %>%
+  count(word, remark, sort = TRUE) %>% 
+  pivot_wider(names_from = remark, values_from = n, values_fill = 0)  %>%
+  column_to_rownames(var = "word") %>% 
+  comparison.cloud(colors = c('blue','red'),
+                   family="AppleGothic", 
+                   max.words=20)
+```
+
+#### 3. 영어 감성분석
+
+-   get_sentiment(data, method='syuzhet')

@@ -48,7 +48,7 @@ ii\. 정규분포를 따르지 않을 때,\
 wilcox.test(x, alternative=c('two.sided','less','greater'), mu=0)
 
 ```{r}
-library(MASS)
+library(MASS) # for data
 
 str(cats)
 
@@ -90,7 +90,7 @@ wilcox.test(cats$Bwt, mu=2.6, alternative = 'two.sided')
 
 2.  유의수준 설정
 
-3.  검정통계량의 값 및 유의확률 계산
+3.  검정통계량의 값 및 e유의확률 계산
 
 검정통계량의 값 :
 

@@ -1,0 +1,1041 @@
+---
+title: "Part 5. 정형 데이터마이닝"
+output: html_document
+---
+
+### 1. 데이터 분할
+
+-   sample
+
+> sample(x, size, replace=FALSE, prob,...)
+
+-   createDataPartition
+
+> **caret 패키지**
+>
+> createDataPartition(y, times, p, list,...)
+>
+> -   y :종속변수
+>
+> -   times : 생성할 분할의 수
+>
+> -   p : 훈련 데이터의 비율
+>
+> -   list : 결과를 리스트로 반환할지 여부(TRUE : 리스트로 / FALSE : 행렬로)
+
+### 2. 성과분석
+
+#### 1. 오분류표
+
+> **caret 패키지**
+>
+> confusionMatrix(predict, test)
+
+#### 2. ROC 그래프
+
+> **ROCR 패키지**
+>
+> prediction(predictions, labels)
+>
+> -   predictions : 예측값
+>
+> -   labels : 실제값
+
+> **ROCR 패키지**
+>
+> performance(prediction.object, acc, fqr, tpr)
+>
+> -   acc, fqr, tpr : accuracy, fpr, tpr 등을 지정
+
+```{r}
+library(ROCR)
+
+set.seed(1)
+probability <- runif(100)
+labels <- ifelse(probability>0.5 & runif(100)<0.4, 1, 2)
+
+# ROCR 그래프
+pred <- prediction(probability, labels)
+plot(performance(pred,'tpr','fpr'))
+
+# AUC
+performance(pred,'auc')@y.values # 클수록 좋은 모형
+```
+
+### 2. 분류 분석
+
+#### 1. 로지스틱 회귀분석
+
+-   로지스틱 회귀분석
+
+> glm(formula, data, family)
+>
+> -   family : 분석에 따른 link function 선택('binomial', 'gaussian', 'Gamma', 'poisson')
+
+-   예측
+
+> predict(model, newdata, type,...)
+>
+> -   type : 예측 결과 유형('link'=log-odds값 / 'response'=0\~1확률값)
+
+-   최적(전진선택법/)
+
+> step(model, scope, direction)
+
+```{r}
+credit <- read.csv('german_credit.csv')
+credit$Creditability <- as.factor(credit$Creditability)
+
+set.seed(1)
+idx <- sample(1:nrow(credit),nrow(credit)*0.7,replace=F)
+train <- credit[idx,]
+test <- credit[-idx,]
+
+# 로지스틱 회귀분석
+logistic <- glm(Creditability~.,
+               data = train,
+               family = 'binomial')
+summary(logistic)
+
+# 이탈도 분석
+anova(logistic, test='Chisq')
+```
+
+#### 2. 의사결정나무
+
+-   의사결정나무
+
+> **rpart 패키지**
+>
+> rpart(formula, data, method, control=rpart.control(),...)
+>
+> -   method : 의사결정나무 tree 종류('anova','poisson','class','exp')
+>
+> -   control : option 설정
+>
+> =\> cptable인자 : 모델의 가지치기, 트리의 최대크기 조절
+>
+> 1.  nsplit : 분할 횟수
+>
+> 2.  xerror, std : 해당 CP(복잡도)에서 CV했을 때 오류율, 편차
+>
+>     =\> xerror가 가장 낮은 split 개수 선택
+
+-   cptable 시각화
+
+> **rpart패키지**
+>
+> plotcp(model) : 나무의 크기 설정
+
+-   가지치기
+
+> rpart 패키지
+>
+> prun(model, cp)
+>
+> -   cp : 복잡도
+
+-   시각화
+
+> **rpart.plot 패키지**
+>
+> prp(model)
+
+-   예측
+
+> predict(model, newdata, type)
+
+```{r}
+library(rpart)
+library(rpart.plot)
+
+# 의사결정나무
+dt.model <- rpart(Creditability~.,
+                  method = 'class',
+                  data = train,
+                  control = rpart.control(maxdepth = 5,
+                                          minsplit = 15))
+
+# 가지치기, 트리 최대 크기조절
+opt <- which.min(dt.model$cptable[,'xerror'])
+cp <- dt.model$cptable[opt,"CP"]
+prune.c <- prune(dt.model,cp=cp)
+
+# cptable 시각화
+plotcp(dt.model)
+
+# 나무 시각화
+prp(prune.c, type = 4, extra = 2)
+
+
+```
+
+#### 3. 앙상블
+
+1.  배깅
+
+-   배깅
+
+> **ipred 패키지**
+>
+> bagging(formula, data, mfinal, control,...)
+>
+> -   mfinal : 반복 수 또는 사용할 트리의 수
+>
+> -   control : option 설정
+
+```{r}
+library(ipred)
+
+# 배깅
+bag <- bagging(Creditability~.,
+               data = train,
+               mfinal=15)
+
+```
+
+2.  부스팅
+
+*(패키지 설치 불가로 생략)*
+
+3.  랜덤포레스트
+
+-   랜덤포레스트
+
+> **randomForest 패키지**
+>
+> randomForest(formula, data, ntree, mtry,...)
+>
+> -   ntree : 사용할 트리의 수
+>
+> -   mtry : 각 분할에서 랜덤으로 뽑힌 변수의 개수(일반적으로 분류=sprt(p) / 회귀=p/3)
+
+-   변수중요도 시각화
+
+> **randomForest 패키지**
+>
+> varImpPlot(model)
+
+-   하이퍼파라미터 튜닝
+
+> **randomForest 패키지**
+>
+> tuneRF()
+
+```{r}
+library(randomForest)
+
+# 랜덤포레스트
+set.seed(1)
+rf.model <- randomForest(Creditability ~.,
+                         data = train,
+                         ntree=50,
+                         mtry=sqrt(20),
+                         importance=T)
+
+# 변수 중요도
+rf.model$importance
+
+# 변수중요도 시각화
+varImpPlot(rf.model)
+```
+
+#### 4. SVM
+
+-   SVM
+
+> **e1071 패키지**
+>
+> svm(formula, data, kernel, gamma, cost)
+>
+> -   kernel : 훈련과 예측에 사용되는 커널 ('radial','linear','polynomial','sigmoid')
+>
+> -   gamma : 초평면의 기울기
+>
+> -   cost : 과적합을 막는 정도
+
+-   하이퍼파라미터 튜닝
+
+> **e1071 패키지**
+>
+> tune.svm(formula, data, kernel, gamma, cost)
+
+```{r}
+library(e1071)
+
+# 하이퍼파라미터 튜닝
+tune.svm(Creditability~.,
+         data = credit,
+         gamma = 10^(-6:-1),
+         cost = 10^(0:2))
+
+# SVM
+svm.model <- svm(Creditability~.,
+                 data = train,
+                 kernel='radial',
+                 gamma=0.01,
+                 cost=1)
+summary(svm.model)
+```
+
+#### 5. 나이브 베이즈 분류
+
+-   나이브 베이즈 분류
+
+> **e1071 패키지**
+>
+> naiveBayes(formula, data, laplace)
+>
+> -   laplace : 라플라스 보정 여부
+
+```{r}
+library(e1071)
+
+# 나이브 베이즈 분류
+nb.model <- naiveBayes(Creditability~.,
+                       data = train,
+                       laplace = 0)
+nb.model
+```
+
+#### 6. K-NN
+
+-   K-NN
+
+> **class 패키지**
+>
+> knn(train, test, cl, k)
+>
+> -   cl : train data의 종속 변수
+>
+> -   k : 이웃의 개수 (일반적으로 n의 제곱근)
+
+```{r}
+library(class)
+
+# knn
+knn.26 <- knn(train[,-1], test[,-1],train[,1],
+             k=round(sqrt(nrow(train))))
+
+# 최적의 k
+result <- numeric()
+k=1:28
+for (i in k) {
+  pred <- knn(train[,-1], test[,-1],train[,1],k=i)
+  t <- table(pred, test$Creditability)
+  result[i] <- (t[1,1]+t[2,2])/sum(t)
+}
+which(result==max(result))
+```
+
+#### 7. 인공신경망 모형
+
+-   인공신경망 - 전통적인 역전파
+
+> **nnet 패키지**
+>
+> nnet(formula, data, size, maxit, decay)
+>
+> -   size : hidden node 개수
+>
+> -   maxit : 학습 반복횟수, 반복 중 가장 좋은 모델 선정
+>
+> -   decay : 가중치 감소의 모수
+
+-   변수 중요도
+
+> **NeuralNetTools 패키지**
+>
+> garson(model)
+
+-   인공신경망 - 탄력적 역전파
+
+> **neuralnet 패키지**
+>
+> neuralnet(formula, data, algorithm, threshold, hidden, stepmax)
+>
+> -   algorithm : 사용할 알고리즘 ('backprop','rprop+','rprop-')
+>
+> -   threshold : 훈련중단 기준
+>
+> -   hidden : 은닉노드 개수
+>
+> -   stepmax : 인공 신경망 훈련 수행 최대 횟수
+
+```{r}
+library(nnet)
+library(NeuralNetTools)
+library(neuralnet)
+library(caret)
+
+# nnet
+set.seed(1)
+nn.model <- nnet(Creditability~.,
+                 data = train,
+                 size=2,
+                 maxit=200,
+                 decay=5e-04)
+summary(nn.model)
+
+# 변수 중요도
+garson(nn.model)
+
+# neuralnet
+data("infert")
+set.seed(1)
+in.part <- createDataPartition(infert$case,
+                               times = 1,
+                               p=0.7)
+parts <- as.vector(in.part$Resample1)
+train.infert <- infert[parts,]
+test.infert <- infert[-parts,]
+
+nn.model2 <- neuralnet(case~age+parity+induced+spontaneous,
+                       data=train.infert,
+                       hidden = c(2,2),
+                       algorithm = 'rprop+',
+                       threshold = 0.01,
+                       stepmax = 1e+5)
+plot(nn.model2)
+```
+
+#### 8. XGBoost
+
+※ xgb 학습 데이터 생성 후 모델 피팅
+
+-   xgboost 학습데이터
+
+> **xgboost 패키지**
+>
+> xgb.DMatrix(data. label)
+>
+> -   data : matrix 형태의 x
+>
+> -   label : num 형태의 y
+
+-   xgboost
+
+> **xgboost 패키지**
+>
+> xgboost(data, max_depth, nthread, nround, objective, num_class, verbose)
+>
+> -   max_depth : 의사결정나무 깊이의 제한 =\> 커질수록 과적합
+>
+> -   eta : step sizee shrinkage로 학습 단계별 가중치를 얼마나 적용할지 =\> 낮을수록 보수적
+>
+> -   nthread : 학습에 사용할 thread 수
+>
+> -   nround : iteration을 몇 번 진행할지
+>
+> -   objective : y의 형태 ('binary:logistic'=이항 / 'reg:linear'=연속 / 'multi;softmax'=다항)
+>
+> -   num_class : 클래스가 몇 개 존재하는지
+>
+> -   verbose : 평가값들에 대한 메세지 출력(0=출력X)
+
+-   변수 중요도
+
+> **xgboost 패키지**
+>
+> xgb.importance(feature_names, model)
+>
+> -   features_names : 변수 이름
+
+```{r}
+library(xgboost)
+
+data(iris)
+dt <- iris
+dt$label <- ifelse(iris$Species=='setosa',0,
+                   ifelse(iris$Species=='versicolor',1,2))
+
+set.seed(1)
+train_idx <- sample(1:nrow(iris), 0.7*nrow(iris))
+train <- dt[train_idx,]
+test <- dt[-train_idx,]
+train_mat <- as.matrix(train[,-c(5:6)])
+train_label <- train$label
+
+# xgboost 학습데이터
+dtrain <-xgb.DMatrix(data=train_mat, label=train_label)
+
+# xgboost
+xgb_model <- xgboost(data = dtrain, max_depth=2,eta=1,
+                     nthread=2,nround=2,
+                     objective='multi:softmax',
+                     num_class=3,
+                     verbose=0)
+
+# 변수중요도
+names <- dimnames(dtrain)[[2]]
+importance_mat <- xgb.importance(names,model=xgb_model)
+importance_mat
+xgb.plot.importance(importance_mat[1:2,]) # 시각화
+```
+
+### 3. 군집분석
+
+#### 1. 계층적 군집분석
+
+-   거리 측정
+
+> dist(data, method)
+>
+> -   method : 거리측정 방법('euclidean','maximum','manhattan','canberra',binary','minkowski')
+
+-   계층적 군집분석
+
+> hclust(data, method)
+>
+> -   data : dist 결과 데이터
+>
+> -   method : 거리측정 방법('single','complete','average','median','ward.D')
+
+-   군집 수 선정
+
+> cutree(data, k)
+>
+> -   data : hclust 데이터
+>
+> -   k : 그룹의 수
+
+-   덴드로그램
+
+> plot(data)
+>
+> -   data : hclust 데이터
+
+-   그룹 시각화
+
+> rect.hclust(data, h, k, border)
+>
+> -   data : hclust 데이터
+>
+> -   h : 높이의 수
+>
+> -   k : 그룹의 수
+>
+> -   border : 경계선 색
+
+```{r}
+data("USArrests")
+
+# 거리 측정
+US.dist <- dist(USArrests, 'euclidean')
+
+# 계층적 군집분석
+US.single <- hclust(US.dist, method = 'single') # 최단거리법
+
+# 군집 수
+group <- cutree(US.single, k=6)
+
+# 덴드로그램
+plot(US.single)
+
+# 그룹 시각화
+rect.hclust(US.single,k=8,border = 'red')
+```
+
+#### 2. 비계층적 군집분석
+
+-   k-means clustering ⓵
+
+> kmeans(data, centers,...)
+>
+> -   centers : 군집의 개수를 설정
+>
+> =\> cluster 인자 : 어느 그룹에 속해있는지
+
+-   k-means clustering ⓶
+
+=\> 최적의 k 도출
+
+> **NbClust 패키지**
+>
+> NbClust(data, min.nc, max.nc, method,...)
+>
+> -   min.nc : 최소 군집 수
+>
+> -   max.nc : 최대 군집 수
+>
+> -   method : 군집분석 방법 ('kmeans','median','single','complete','average')
+
+```{r}
+library(NbClust)
+
+data("iris")
+
+# kmeans
+kmeans_model <- kmeans(iris[,-5], centers = 3)
+kmeans_model$cluster
+
+# Nbclust
+nc_model <- NbClust(iris[,-5], min.nc=2, max.nc=15, method='kmeans')
+```
+
+#### 3. 혼합 분포 군집
+
+-   혼합 분포 군집분석
+
+> **mclust 패키지**
+>
+> Mclust(data, G, ...)
+>
+> -   data : [수치형 변수]{.underline} 데이터
+>
+> -   G : BIC를 계산할 혼합분포 클러스터의 수
+>
+> =\> classification 인자 : 어느 그룹에 분류되었는지
+
+-   시각화
+
+> plot.Mclust(model)
+>
+> -   model : Mclust 데이터
+
+```{r}
+library(mclust)
+
+# 혼합 분포 군집
+mc <- Mclust(iris[,1:4],G=3)
+mc$classification
+summary(mc,parameters = T)
+
+
+# 시각화
+plot.Mclust(mc)
+```
+
+#### 4. SOM
+
+-   뉴런층 설정
+
+> **kohonen 패키지**
+>
+> somgrid(xdim, ydim, topo)
+>
+> -   xdim : x 차원
+>
+> -   ydim : y 차원
+>
+> -   topo : 형태 ('hexagonal', 'rectangular')
+
+-   SOM
+
+> **kohonen 패키지**
+>
+> supersom(data, grid, rlen, alpha, radius, init, toroidal, n.hood, keep.data)
+>
+> -   grid : 출력층 표현(somgrid() 함수의 출력값)
+>
+> -   rlen : 학습횟수
+>
+> -   alpha : 학습계수
+>
+> -   radius : 뉴런의 반경
+>
+> -   init : 초기치
+>
+> -   toroidal : map의 단말부 표현여부
+>
+> -   n.hood : 주변부 표현형태('circular', 'square' )
+>
+> -   keep.data : 자료수용여부
+
+```{r}
+library(kohonen)
+
+data("iris")
+set.seed(1)
+train_idx <- sample(1:nrow(iris),0.7*nrow(iris))
+train_Set <-  list( x = as.matrix(iris[train_idx,-5]), Species = as.factor(iris[train_idx,5]))
+test_Set <- list(x = as.matrix(iris[-train_idx,-5]), Species = as.factor(iris[-train_idx,5]))
+
+# somgrid
+gr <- somgrid(xdim = 3, ydim = 5, topo = "hexagonal")
+
+# SOM
+ss <- supersom(train_Set, gr, rlen = 200, alpha = c(0.05, 0.01))
+
+# 시각화
+plot(ss, type="changes")
+```
+
+### 4. 연관분석
+
+※ [트랜젝션 형태]{.underline}로 변환 후 연관분석
+
+-   트랜젝션 변환
+
+> as(data, 'transactions')
+>
+> -   data : factor or logical 데이터
+
+-   연관분석
+
+> **arules 패키지**
+>
+> apriori(data, parameter, appearance, control)
+>
+> -   parameter : 최소 지지도(supp), 신뢰도(conf), 최대 아이템 개수(maxlen), 최소 아이템 개수(minlen)
+>
+> -   appearance : 특정 연관규칙 결과\
+>     ( list(default='lhs', rhs='item')=특정 우측 값 / list(default='rhs', lhs='item')=특정 좌측 값)
+>
+> -   control : 결과 보여주기 등의 알고리즘의 성능 조정\
+>     ( list(verbose=T)=결과 보여주기 )
+
+-   트랜젝션 데이터 or 모델 결과 확인
+
+> **arules 패키지**
+>
+> inspect(model)
+
+```{r}
+library(arules)
+
+data("Groceries") # transactions data
+inspect(Groceries[1:3])
+
+# 연관분석
+groc.rule <- apriori(data=Groceries, parameter = list(supp=0.001, conf=0.3, minlen=2),
+                      appearance = list(default='lhs',
+                                        rhs='soda'), 
+                      control = list(verbose=F))
+
+# 중복 가지치기
+prune.dup.rules <- function(rules){
+  rule.subset.matrix <- is.subset(rules, rules, sparse = FALSE)
+  rule.subset.matrix[lower.tri(rule.subset.matrix, diag=T)] <- NA
+  dup.rules <- colSums(rule.subset.matrix, na.rm = T) >= 1
+  pruned.rules <- rules[!dup.rules]
+  return(pruned.rules)
+}
+
+groc.rule <- prune.dup.rules(groc.rule)
+
+# 결과 확인
+inspect(sort(groc.rule,by=c('confidence'),decreasing = T)[1:3])
+```
+
+### 5. 시계열
+
+#### 1. 시계열
+
+-   시계열 데이터
+
+> ts(data, start, frequency)
+>
+> -   start : 시작 날짜
+>
+> -   frequency : 주기 ( 4:분기별 / 12:월별 / 365:일별 )
+
+-   야후 파이낸스 데이터 추출
+
+> **quantmod 패키지**
+>
+> getSymbols(Symbols, src, from, to)
+>
+> -   Symbols : 주식 종목
+>
+> -   src : 사이트
+>
+> -   from, to : from \~ to 날짜
+
+```{r}
+ts(1:10, frequency=4, start=c(1959,2))
+```
+
+#### 2. 시계열 분해
+
+-   시계열 분해
+
+> decompose(x, type)
+>
+> -   type : 형태 ('additive', 'multiplicative')
+
+```{r}
+plot(ldeaths)
+
+# 차분
+ldeaths.decompose <- decompose(ldeaths)
+plot(ldeaths.decompose)
+
+# 계절 요인 제외
+ldeaths.decompose.adj <- ldeaths - ldeaths.decompose$seasonal
+
+plot(ldeaths.decompose.adj)
+```
+
+#### 3. 차분
+
+-   차분 : 추세가 있는 데이터 차분
+
+> diff(x, lag, differences)
+>
+> -   lag : 시차 설정
+>
+> -   differences : 차분 차수
+
+-   ACF(자기상관함수 그래프)
+
+> acf(x, lag.max)
+
+-   PACF(부분자기상관함수 그래프)
+
+> pacf(x, lag.max)
+
+```{r}
+plot(Nile)
+
+# 1차 차분
+Nile.diff_1 <- diff(Nile, differences=1)
+plot(Nile.diff_1)
+
+# 2차 차분
+Nile.diff_2 <- diff(Nile, differences=2)
+plot(Nile.diff_2)
+
+# ACF
+acf(Nile.diff_2, lag.max=20) # => MA(1) 
+acf(Nile.diff_2, lag.max=20, plot=FALSE)
+
+# PACF
+pacf(Nile.diff_2, lag.max=20) # => AR(8)
+```
+
+#### 4. ARIMA 모형
+
+-   auto ARIMA
+
+> **forecast 패키지**
+>
+> auto.arima(x)
+
+-   ARIMA 모형
+
+> arima(x, order=c(p,d,q))
+>
+> -   order : ARIMA(p,d,q) 설정
+
+※ [AIC가 가장 작은 모델]{.underline} 선택
+
+-   ARIMA 모형을 통한 예측
+
+> **forecast 패키지**
+>
+> forecast(model, h)
+>
+> -   h : 예측 기간 수
+
+```{r}
+library(forecast)
+
+# auto arima
+auto.arima(Nile)
+
+# ARIMA
+(Nile.ar <- arima(Nile, order=c(8,2,0)))
+(Nile.ma <- arima(Nile, order=c(0,2,1)))
+(Nile.arima <- arima(Nile, order=c(8,2,1)))
+# => AIC가 가장 낮은 모델 선택
+
+# forecast
+Nile.forecast <- forecast(Nile.arima,h=10)
+plot(Nile.forecast)
+```
+
+-   모형 진단(모형 타당성 검정)
+
+1.  잔차의 백색 잡은 검정(모형의 잔차가 불규칙이고 독립적)
+
+> tsdiag(model)
+
+=\> ACF에서 모든 lag가 파란선 안 = 뷸규칙성
+
+=\> p-value\>0 = 모델 적합
+
+> Box.test(model\$residuals, type='Ljung')
+
+=\> p-value\>0.05 = 모델 적합
+
+```{r}
+tsdiag(Nile.arima)
+
+Box.test(Nile.arima$residuals, type = 'Ljung')
+```
+
+#### 5. SARIMA 모형
+
+-   SARIMA : 계절성 부분을 포함한 ARIMA
+
+> **astsa 패키지**
+>
+> sarima(xdata, p,d,q P,D,Q, S)
+>
+> -   p,d,q : arima(p,d,q)
+>
+> -   P,D,Q : 계절성 P,D,Q
+>
+> -   S : 계절 주기
+
+-   ACF, PACF
+
+> **astsa 패키지**
+>
+> acf2(data, max.lag)
+
+```{r}
+library(astsa)
+
+library(fpp) # for data 
+data("euretail")
+ts <- euretail
+plot(ts)
+
+# auto.arima
+auto.arima(ts)
+
+# 분산 제거
+logts <- log(ts)
+plot(logts)
+
+# 차분
+ts.diff <- diff(logts)
+acf2(ts.diff)
+
+# 계절성 차분
+ts.diff_4 <- diff(ts, lag=4)
+
+# 일반 차분
+ts.Ddiff <- diff(ts.diff_4)
+acf2(ts.Ddiff, max.lag = 25)
+
+# SARIMA 
+ts.sarima1 <- sarima(ts, 0,1,1, 0,1,1, 4)
+ts.sarima2 <- sarima(ts, 0,1,2, 0,1,1, 4)
+ts.sarima2 <- sarima(ts, 0,1,3, 0,1,1, 4)
+```
+
+### 6. 생존분석
+
+#### 1. 생존분석
+
+-   생존분석 데이터
+
+> **survival 패키지**
+>
+> Surv(time, time2, event, type)
+>
+> -   time, time2 : [0_time) or [time,time2)
+>
+> -   event : (alive,dead) = (0,1),(FASLE,TRUE),(1,2)
+>
+> -   type : 중도절단 종류('right','left','counting','interval',...)
+
+-   생존 함수
+
+> **survival 패키지**
+>
+> survfit(formula)
+>
+> -   formula : Surv(time,event) \~ covariates
+
+-   log-rank test
+
+생존 확률이 변수에 따라 차이가 있는지 검정
+
+H0 : 두 집단의 위험함수가 동일하다.
+
+> **survival 패키지**
+>
+> survdiff(formula, data, subset, na.action)
+>
+> -   subset : 조건에 맞는 행 추출
+>
+> -   na.action : 결측치 처리
+
+```{r}
+library(survival)
+
+t1 <- c(2,1,2,4) 
+t2 <- c(8,5,10,9) 
+st <- c(1,0,0,1)
+
+# 생존분석 데이터
+Surv(time=t1, time2=t2, event=st)
+
+# 생존 함수
+survfit(Surv(t1,t2,st)~1)
+summary(survfit(Surv(t1,t2,st)~1))
+
+# 로그 랭크 검정
+survdiff(Surv(time,status)~sex,data=lung)
+```
+
+#### 2. Kaplan-Meier
+
+-   kaplan-Meier curve
+
+> plot(formula)
+>
+> -   formula : 생존함수
+
+※ 비례위험가정 : 위험비가 일정하게 유지된다.
+
+=\> 두 성분에 선이 교차하면 안된다.
+
+```{r}
+library(asaur) # for data
+data("pharmacoSmoking")
+
+df1 <- survfit(Surv(ttr,relapse)~grp, data=pharmacoSmoking)
+
+# kaplan-Meier curve
+plot(df1, col=c('red','blue')) # conf.int=T : 신뢰구간
+legend('topright',lty=1,col=c('red','blue'),
+       legend = c('combination','patch only'))
+
+# 비례위험가정 위배
+df2 <- survfit(Surv(os,status)~stage, data = pancreatic2)
+plot(df2, col=c('red','blue'))
+legend("topright",lty=1, col=c("red","blue"),legend = c("Locally Advanced","Metastatic"))
+```
+
+#### 3. Cox 분석
+
+-   cox분석
+
+> **survival 패키지**
+>
+> coxph(formula)
+>
+> -   formula : 생존함수
+
+-   martingale residual : 연속형 변수의 그룹화
+
+> residuals(model, type='martingale')
+
+※ residual이 0을 기준으로 그룹을 나눔
+
+```{r}
+library(survival)
+library(ggplot2)
+
+data("pharmacoSmoking")
+
+# cox분석 
+cox_model <- coxph(Surv(ttr,relapse)~grp,data=pharmacoSmoking)
+summary(cox_model)
+
+# martingale residual
+cp1 <- coxph(Surv(ttr,relapse)~1,data=pharmacoSmoking)
+pharmacoSmoking$resid <- residuals(cp1, type = 'martingale')
+pharmacoSmoking %>% 
+  ggplot(aes(age,resid)) + 
+  geom_point()+geom_smooth() + 
+  theme_classic() + 
+  geom_hline(yintercept=0,col='red') +
+  geom_vline(xintercept = c(34,64),lty=3,col='blue') +
+  geom_vline(xintercept = c(49),lty=2,col='blue')
+```

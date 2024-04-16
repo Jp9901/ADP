@@ -1,0 +1,289 @@
+---
+title: "Part 2. 데이터 전처리"
+output: html_document
+---
+
+### 2. 데이터 변환
+
+#### 1. 파생 변수
+
+> df\$변수명 : 새 변수 생성
+
+> transform(df, 변수명=함수) : 새 변수 or 더미 변수 생성
+
+※ 더미 변수 생성 시, 기준이 되는 범주를 제외한 [(n-1)개의 더미 변수]{.underline} 생성
+
+```{r}
+data(iris)
+dt <- iris
+
+# df$
+dt$Sum.Length <- dt$Sepal.Length+dt$Petal.Length
+
+# transform
+dt_new <- transform(dt,
+                    Species_setosa = ifelse(Species=='setosa',1,0),
+                    Species_versicolor = ifelse(Species=='versicolor',1,0))
+head(dt_new)
+```
+
+#### 2. 변수 축소
+
+-   주성분 분석
+
+> princomp(data, cor=FALSE, scores=TRUE) : 주성분분석
+>
+> -   cor : TRUE=상관행렬로(측정단위 표준화) /FALSE=공분산행렬로(측정단위 반영)
+>
+> -   scores : 각 주성분의 점수를 계산해야 하는지 =\> 주성분들의 선형식을 통해 각 행별 좌표 계산
+
+> plot(prin_df, type='l') : scree plot
+
+> biplot(prin_df) : 제1주성분과 제2주성분으로 이루어진 좌표평면상에 원데이터 행들의 주성분점수를 산점도형태로, 주성분계수를 화살표로
+
+```{r}
+data(USArrests)
+US_prin <- princomp(USArrests, cor = TRUE)
+
+head(US_prin$loadings) # 주성분 계수(주성분에 기여하는 가중치)
+head(US_prin$scores) # 주성분들의 선형식을 통해 계산된 각 행별 좌표
+
+summary(US_prin) # 누적 기여율이 85%이상인 주성분 개수까지 선택
+
+plot(US_prin, type='l') # 기울기가 급격하기 줄어드는 (n-1)번째 주성분까지 선택
+
+biplot(US_prin,scale = 0)
+```
+
+#### 3. 요인분석
+
+요인분석 : 변수들 간의 상관관계를 고려하여 서로 유사한 변수들을 묵어 새로운 잠재요인들을 추출
+
+> factanla(data, factors=n, rotation='varimax', scores='regression',...)
+>
+> -   factors : 요인의 개수 지정
+>
+> -   rotation : 요인 회전방법('varimax,'promax','none')
+>
+> -   scores : 요인점수 계산 방법('regression','Bartlett')
+
+```{r}
+data("swiss")
+Min <- apply(swiss,2,min)
+Max <- apply(swiss,2,max)
+swiss_fa <- scale(swiss, center=Min, scale = (Max-Min))
+
+# i) 고유값을 통해 요인 개수 설정
+swiss.prin <- princomp(swiss, cor = TRUE)
+swiss.prin$sdev^2
+# => 고유값이 1 이상인 개수를 요인 개수로 설정
+
+# ii) screeplot을 통해 요인 개수 설정
+plot(swiss.prin,type='l')
+# => 기울기가 완만해지는 점 전까지를 요인 개수로 설정
+
+# iii) cor(df)를 통해 직접 요인 개수 설정
+cor(swiss)
+# => 상관계수 값이 높은 그룹의 개수를 요인 개수로 설정
+
+factanal(swiss_fa, factors=2)
+# => Cumulative Var : 전체 데이터 분산의 %를 설명
+# => p-value : 기각=요인 분석 개수 적절X
+```
+
+#### 4. 표준화와 정규화
+
+-   표준화
+
+> scale(data,center,scale)
+
+-   정규화
+
+> scale(data, center=Min, scale=Max-Min)
+
+```{r}
+data(iris)
+Min <- apply(iris[1:4],2,min)
+Max <- apply(iris[1:4],2,max)
+
+# 표준화
+head(scale(iris[1:4]))
+
+# 정규화
+head(scale(iris[1:4],center=Min,scale=Max-Min))
+```
+
+### 3. 데이터 결합 및 요약
+
+#### 1. 결합
+
+> rbind()
+
+> cbind()
+
+> merge()
+
+#### 2. 요약
+
+> aggregate()
+
+> table()
+
+> prop.table()
+
+> subset()
+
+#### 3. apply
+
+> apply()
+
+> lapply()
+
+> sapply()
+
+> vapply()
+
+> mapply()
+
+> tapply()
+
+### 4. 패키지 이용
+
+#### 1. reshape2
+
+> **reshape2 패키지**
+>
+> melt(df, id.vars, measure.vars) : 열을 행으로
+>
+> -   id.vars : 기준이 되는 식별자 칼럼들
+>
+> -   measure.vars : 측정치 칼럼들
+
+> **reshape2 패키지**
+>
+> dcast(df, formula, fun.aggregate) : 행을 열로
+>
+> -   formula : id변수 \~ variable변수
+>
+> -   fun.aggregate : id변수를 기준으로 여러 행이 존재할 경우 해당 행들에 적용할 집합 함수
+
+```{r}
+library(reshape2)
+data("airquality")
+dt <- airquality
+
+# melt()
+dt_melt <- melt(dt, id.vars = c('Month','Day'), na.rm = T)
+head(dt_melt)
+
+# dcast()
+head(dcast(dt_melt, Month+Day~...))
+```
+
+### 5. 결측치
+
+#### 1. 결측치
+
+-   결측치 확인
+
+> is.na()
+
+> complete.cases()
+
+-   결측치 처리
+
+1.  결측치 제거
+
+2.  중앙값/평균값/최빈값/상수값 대치
+
+    > **DMwR 패키지 (깃허브를 통해)**
+    >
+    > centralImputation(data) : 중앙값
+    >
+    > centralValue(data) : 중앙값 / 최빈값
+
+3.  K-NN
+
+    > **DMwR 패키지 (깃허브를 통해)**
+    >
+    > knnImputation(data, k)
+
+4.  MICE(Multivariate Imputation by Chained Equation)
+
+5.  딥러닝을 활용한 Imputation
+
+※ 가이드라인\
+10% 미만 : 삭제 or 대치\
+10% \~ 50% : regression or model based imputation\
+50% 이상 : 해당 변수 자체 제거
+
+```{r}
+# DMwR 패키지
+remotes::install_github("cran/DMwR")
+library(DMwR)
+```
+
+#### 2. 이상치
+
+> quantile()
+
+> fivenum()
+
+> summary()
+
+> boxplot()
+
+### 6. 날짜 데이터
+
+> Sys.Date() : 현재 날짜
+
+> Sys.time() : 현재 날짜와 시간
+
+> as.Date()
+
+> as.POSIXct()
+
+> as.POSIXlt()
+
+### 7. 클래스불균형
+
+#### 1. 업 샘플링 / 다운 샘플링
+
+> **caret 패키지**
+>
+> upSample(x, y)
+>
+> downSample(x, y)
+
+#### 2. SMOTE
+
+> **DMwR 패키지 (깃허브를 통해)**
+>
+> SMOTE(form, data, perc.over, k, perc.under)
+>
+> -   perc.over : 적은 쪽의 데이터를 얼마만큼의 비율로 샘플링을 추가할지
+>
+> -   k : 고려할 최근접 이웃의 수
+>
+> -   perc.under : 많은 쪽의 데이터 중 얼마만큼의 비율로 샘플링을 추가할지
+
+⓵ 오버샘플링 수 = perc.over/100 \* n(적은 범주의 데이터 수)
+
+⓶ 언더샘플링 수 = perc.under/100 \* ⓵
+
+=\> 적은 범주의 데이터 수 = n+⓵ / 많은 범주의 데이터 수 = ⓶
+
+```{r}
+remotes::install_github("cran/DMwR")
+library(DMwR)
+
+data("iris")
+df <- iris[,c(1,2,5)]
+df$Species <- factor(ifelse(df$Species=='setosa','rare','common'))
+table(df$Species)
+
+newData <- SMOTE(Species~., df, perc.over = 600,perc.under = 100)
+
+table(df$Species)
+table(newData$Species)
+```

@@ -1,6 +1,6 @@
 ---
-output:
 title: "2장. 분류 분석(2)"
+output:
   md_document:
     variant: markdown_github
 ---
@@ -180,6 +180,8 @@ which(result==max(result))
 
 -   nnet(formula, data, size, maxit, decay=5e-04,...)
 
+    전통적인 역전파를 가지고 feed-forward 신경망을 훈련하는 알고리즘
+
     -   size : hidden node의 개수
 
     -   maxit : 학습 반복횟수, 반복 중 가장 좋은 모델을 선정
@@ -270,4 +272,74 @@ set.seed(2)
 test.infert$nn.model2_pred.prob <- compute(nn.model2, covariate = test.infert[,c(2:4,6)])$net.result   # 오류가 있는듯
 test.infert$nn.model2_pred <- ifelse(test.infert$nn.model2_pred.prob>0.5,1,0)
 confusionMatrix(as.factor(test.infert$nn.model2_pred),as.factor(test.infert[,5]))
+```
+
+### 추가
+
+#### 1. XGBoost
+
+xgboost 패키지
+
+:   xgb.DMatrix(data, label) : xgboost 학습데이터 생성
+
+    -   data : ※ matrix 형태
+
+    -   label : ※ 수치형으로 변환
+
+:   xgboost() : 트리모델 생성
+
+    -   max_depth : 의사결정나무 깊이의 한도 =\> 커질수록 과적합
+
+    -   eta : step size shrinkage로 학습 단계별 가중치를 얼마나 적용할지 =\> 낮을수록 보수적
+
+    -   nthread : 학습에 사용할 thread 수
+
+    -   nround : iteration을 몇 번 진행할지
+
+    -   objective : 어떤 목적을 가지고 학습을 진행할지('binary:logistic':이항 / 'multi:softmax':다항)
+
+    -   num_class : 클래스가 몇 개가 존재하는지 알려주는 값
+
+    -   verbose : 학습마다 평가값들에 대한 메세지를 출력할지(0:출력X / 1:출력)
+
+```{r}
+#install.packages('xgboost')
+library(xgboost)
+
+data(iris)
+dt <- iris
+dt$label <- ifelse(iris$Species=='setosa',0,
+                   ifelse(iris$Species=='versicolor',1,2))
+
+set.seed(1)
+train_idx <- sample(1:nrow(iris), 0.7*nrow(iris))
+
+# train set and fitting
+train <- dt[train_idx,]
+test <- dt[-train_idx,]
+
+train_mat <- as.matrix(train[,-c(5:6)])
+train_label <- train$label
+dtrain <-xgb.DMatrix(data=train_mat, label=train_label)
+xgb_model <- xgboost(data = dtrain, max_depth=2,eta=1,
+                     nthread=2,nround=2,
+                     objective='multi:softmax',
+                     num_class=3,
+                     verbose=0)
+
+# test set and predict
+test_mat <- as.matrix(test[,-c(5:6)])
+test_label <- test$label
+
+pred_iris <- predict(xgb_model, test_mat)
+table(pred_iris,test_label)
+```
+
+```{r}
+# 변수 중요도 
+names <- dimnames(dtrain)[[2]]
+importance_mat <- xgb.importance(names,model=xgb_model)
+importance_mat
+
+xgb.plot.importance(importance_mat[1:2,])
 ```

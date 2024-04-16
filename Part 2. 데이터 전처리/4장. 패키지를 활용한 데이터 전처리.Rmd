@@ -212,6 +212,8 @@ library(reshape2)
 
 : id(식별자), variable(측정변수), value(측정값) 세 칼럼으로 이루어진 데이터로 변환
 
+(열을 행으로)
+
 -   id.vars : 데이터를 변형할 때 기준이 되는 식별자 칼럼들
 
 -   measure.vars : 측정치 칼럼들(지정하지 않을 경우, 모든 칼럼)
@@ -224,6 +226,8 @@ air_melt
 #### 3. dcast
 
 : melt함수로 녹여진 형태의 데이터를 다시 여러 칼럼을 가진 형태로 변환해주는 함수
+
+(행을 열로)
 
 -   formula : id변수 \~ variable변수
 

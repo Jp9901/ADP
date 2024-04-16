@@ -1,0 +1,479 @@
+---
+title: "Part 3. 통계분석"
+output: html_document
+---
+
+### 1. 데이터 샘플링
+
+#### 1. 단순 임의 추출
+
+> sample(x, size, replace=FALSE, prop=NULL)
+
+#### 2. 층화 임의 추출
+
+> **sampling 패키지**
+>
+> strata(data, stratanames, size, method)
+>
+> getdata(data,m) : 원본 데이터에서 층화 임의 추출 데이터 추출
+
+```{r}
+library(sampling)
+
+data("iris")
+str_sample <- strata(iris,'Species', size = c(20,15,15), method = 'srswor')
+
+head(str_sample)
+
+head(getdata(iris, str_sample))
+```
+
+### 2. T-test
+
+![](images/스크린샷 2024-04-14 15.38.02.png){width="527"}
+
+※ 표본 크기 30 이상이면 중심극한정리에 의해 정규성 만족
+
+#### 1. 일표본 T-test
+
+$$
+H_0 : \mu = \mu_0
+$$
+
+※ [정규성 검정 후 t-test]{.underline}
+
+-   정규성 검정
+
+※ 표본의 개수가 30개 이상일 때, 중심극한정리에 의해 정규성 가정
+
+> shapiro.test() : 정규성 검정
+>
+> ※ 귀무가설 : 데이터가 정규분포를 따른다
+
+-   일표본 t-test
+
+i) 정규 분포를 따를 때, (귀무가설 채택),
+
+> t.test(x, alternative, mu) : t-test
+
+ii) 정규 분포를 따르지 않을 때, (귀무가설 기각)
+
+> wilcox.test(x, alternative, mu) : t-test
+
+```{r}
+library(MASS) # for data
+data(cats)
+
+# 정규성 검정
+#nrow(cats) # n > 30
+shapiro.test(cats$Bwt)
+
+# t-test
+t.test(cats$Bwt, mu=2.6, alternative='two.sided')
+wilcox.test(cats$Bwt, mu=2.6, alternative='two.sided')
+```
+
+#### 2. 대응표본 T-test
+
+$$
+H_0 : \mu_x-\mu_y=D=0
+$$
+
+※ 두 관측에 대해 [정규성 검정]{.underline} 후 t-test
+
+-   대응표본 t-test
+
+> t.test(x,y, alternative, paired, m)
+>
+> -   paired : TRUE=대응표본 t-test
+
+> wilcox.text(x,y, alternative, paired, m)
+
+```{r}
+df <- data.frame(before = c(7,3,4,5,2,1,6,6,5,4),
+                 after = c(8,4,5,6,2,3,6,8,6,5))
+
+# 정규성 검정
+shapiro.test(df$before)
+shapiro.test(df$after)
+
+# t.test
+t.test(df$before, df$after, paired = TRUE)
+```
+
+#### 3. 독립표본 T-test
+
+$$
+H_0 : \mu_1 = \mu_2
+$$
+
+※ [정규성 검정]{.underline}, [등분산 검정]{.underline} 후 t-test\
+(정규성 위배 시, 바로 wilcox.test()로)
+
+-   등분산 검정
+
+> var.test()
+>
+> ※ 귀무가설 : 두 집단의 분산이 동일하다.
+
+-   독립표본 t-test
+
+> t.test(x,y, alternative, var.equal)
+>
+> -   var.equal : 등분산성 만족 여부
+
+```{r}
+library(MASS) # for data
+data(cats)
+
+# 정규성 검정
+#nrow(cats[cats$Sex=='F',])
+#nrow(cats[cats$Sex=='M',])
+shapiro.test(cats[cats$Sex=='F',]$Bwt)
+shapiro.test(cats[cats$Sex=='M',]$Bwt)
+
+# 등분산 검정
+var.test(Bwt~Sex, data=cats)
+
+# t-test
+t.test(Bwt~Sex, data = cats, alternative='two.sided', var.equal=FALSE)
+wilcox.test(Bwt~Sex, data=cats)
+```
+
+### 3. 교차분석
+
+#### 1. 적합성 검정
+
+$$
+H_0 : 실제\ 분포와\ 이론적\ 분포\ 간에\ 차이가\ 없다.
+$$
+
+> chisq.test(x,y,p)
+>
+> -   p : 귀무가설을 통해 설정한 확률 값
+
+#### 2. 독립성 검정
+
+$$
+H_0 : 두\ 변수\ 사이에는\ 연관이\ 없다.\ (독립이다.)
+$$
+
+> chisq.test( table() )
+
+#### 3. 동질성 검정
+
+$$
+H_0 : 범주화된\ 집단의\ 분포가\ 서로\ 동일하다.
+$$
+
+*(독립성 검정과 동일)*
+
+### 4. 분산분석(ANOVA)
+
+#### 1. 일원배치
+
+$$H_0 : k개의\ 집단\ 간\ 모평균에는\ 차이가\ 없다.$$
+
+-   분산분석
+
+> aov(formula, data)
+
+-   사후분석
+
+> TukeyHSD(x, conf.level)
+>
+> -   x : 분산분석 결과
+
+```{r}
+data("iris")
+
+# 분산분석
+result_aov <- aov(Sepal.Width ~ Species , data = iris)
+summary(result_aov)
+
+# 사후분석
+TukeyHSD(result_aov)
+```
+
+#### 2. 이원배치
+
+1.  $$
+    H_0 : \alpha_1 = \alpha_2 = \cdots = \alpha_a = 0
+    $$
+2.  $$
+    H_0 : \beta_1 = \beta_2 = \cdots = \beta_b = 0
+    $$
+3.  $$
+    H_0 : \alpha_1 \beta_1 + \alpha_2 \beta_2 = \cdots = \alpha_{a-1}\beta_{b-1} = 0
+    $$
+
+-   이원배치 분산분석
+
+> aov(formula, data)
+>
+> -   formula : y\~A\*B
+
+-   상호작용효과 시각화
+
+> interaction.plot(x.factor, trace.factor, response)
+>
+> -   x.factor : 요인 A
+>
+> -   trace.factor : 요인 B
+>
+> -   response : y
+>
+> ※ 두 선이 교차하면 두 독립변수 간 상호작용 존재
+
+```{r}
+data('mtcars')
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$am <- as.factor(mtcars$am)
+car <- mtcars[,c('cyl','am','mpg')]
+
+# 이원배치
+car_aov <- aov(mpg~cyl*am, car)
+summary(car_aov)
+
+# 시각화
+interaction.plot(car$cyl, car$am, car$mpg, col=c('red','blue'))
+```
+
+#### 
+
+### 5. 상관분석
+
+#### 1. 상관계수에 대한 검정
+
+$$
+H_0 : \rho = 0
+$$
+
+-   상관계수
+
+> cor(x,y, method, use)
+>
+> -   method : 상관계수 방법 ('pearson','kendall','spearman')
+>
+> -   use : na값 처리 방법('everything','all.obs','complete.obs','pairwise.complete.obs')
+
+-   상관계수 행렬 시각화
+
+> pairs(x)
+
+> **corrplot 패키지**
+>
+> corrplot(corr, method)
+
+-   상관계수에 대한 검정
+
+> cor.test(x,y, method)
+
+```{r}
+data("iris")
+
+# 상관계수
+cor(iris$Petal.Length, iris$Petal.Width)
+
+# 시각화
+pairs(iris[,1:4])
+
+# 가설 검정
+cor.test(iris$Petal.Length, iris$Petal.Width)
+```
+
+### 6. 회귀분석
+
+#### 1. 단순/다중 선형회귀분석
+
+-   선형회귀분석
+
+> lm(formula, data)
+
+-   선형회귀모형 진단
+
+> plot(x, which)
+>
+> -   x : 선형회귀분석 모형
+>
+> -   which : 그래프 종류
+>
+>     1,2 - 오차의 정규성
+>
+>     3 - 오차의 정규성 + 이상치
+>
+>     4,5 - 이상치
+
+-   예측
+
+> predict(object, newdata)
+
+```{r}
+library(MASS)
+data("Cars93")
+set.seed(1)
+idx <- sample(1:nrow(Cars93),5)
+test <- Cars93[idx,]
+
+# 선형회귀분석
+Price_lm <- lm(Price ~ EngineSize+RPM+Weight, Cars93)
+summary(Price_lm)
+
+# 모형 진단
+par(mfrow=c(2,3))
+plot(Price_lm, which=c(1:6))
+
+# 예측
+predict(Price_lm, test)
+```
+
+#### 2. 최적회귀방정식
+
+-   전진선택법/후진선택법/단계적선택법
+
+> step(object, scope, direction, k)
+>
+> -   object : 회귀 모형
+>
+> -   scope : 모형의 범위( list(upper=..., lower=...) )
+>
+> -   direction : 'forward':전진선택법 / 'backward'=후진제거법 / 'stepwise'=단계적선택법
+>
+> -   k : 모형선택기준 (2=AIC / log()=BIC)
+
+```{r}
+library(MASS)
+data("Cars93")
+
+# 최적회귀방정식
+lm_step <- lm(Price~EngineSize+Horsepower+RPM+Width+Length, Cars93)
+step(lm_step, direction = 'backward')
+```
+
+#### 3. 다항식 회귀분석
+
+-   $$
+    y = \beta_0 + \beta_1(x_1+x_2)+\epsilon
+    $$
+
+> I(x1+x2)
+
+-   $$
+    y=\beta_0 + \beta_1 x_1^2+\beta_2 x_2 + \epsilon
+    $$
+
+> I(x1\^2)
+
+-   $$
+    y=\beta_0 +\beta_1 x + \beta_2 x^2 + \beta_3 x^3 + \cdots + \epsilon
+    $$
+
+> poly(x, degree)
+
+```{r}
+data("quakes")
+
+lm(mag~I(lat+long), data=quakes)
+lm(mag~I(lat^2)+long, data = quakes)
+lm(mag~poly(lat, 3), data=quakes)
+```
+
+#### 4. 정규화 회귀분석
+
+-   릿지/라쏘/엘라스틱넷
+
+> **glmnet 패키지**
+>
+> glmnet(x,y, alpha , lambda)
+>
+> -   alpha : 0=릿지 / 1=라쏘 / 0.5=엘라스틱넷
+
+-   교차검증방법을 통한 lambda 설정
+
+> **glmnet 패키지**
+>
+> cv.glmnet(x,y alpha)
+
+```{r}
+library(glmnet)
+
+library(MASS) # for data
+data("Cars93")
+
+set.seed(1)
+train_idx <- sample(1:nrow(Cars93), replace = F, size = nrow(Cars93)*0.7)
+train.x <- scale(Cars93[train_idx,c('EngineSize','RPM','Weight')]) # 표준화
+test.x <- scale(Cars93[-train_idx,c('EngineSize','RPM','Weight')])
+train.y <- scale(Cars93[train_idx,'Price'])
+test.y <- scale(Cars93[-train_idx,'Price'])
+
+# 릿지
+ridge.lm <- glmnet(train.x,train.y, alpha=0)
+plot(ridge.lm, xvar='lambda')
+
+# 교차검증
+set.seed(1)
+cv.ridge <- cv.glmnet(train.x,train.y,alpha=0)
+plot(cv.ridge)
+
+# 최적의 lambda
+(best_lambda <- cv.ridge$lambda.min)
+ridge.lm_opt <- glmnet(train.x,train.y, alpha=0, lambda = best_lambda)
+```
+
+#### 5. 곡선 데이터
+
+-   곡선 데이터 적합
+
+> **MASS 패키지**
+>
+> boxcox(object)
+
+-   로그변환
+
+1.  log(y) = x
+2.  y = log(x)
+3.  log(y) = log(x)
+
+```{r}
+library(MASS)
+
+x <- 1:100
+set.seed(5)
+norm <- rnorm(100, 0, 5)
+y <- (x+norm)^(-.7)
+plot(x, y)
+
+# boxcox
+lm_norm <- lm(y~x)
+bc_norm <- boxcox(lm_norm)
+lambda <- bc_norm$x[which.max(bc_norm$y)]
+
+plot(x,y^lambda)
+```
+
+#### 6. 일반화 가법모형
+
+$$
+\hat{y_i}=\hat{\beta_0}+\sum^p_{j=1}f_i(x_{ij}+\hat{\epsilon_i})
+$$
+
+> **mgcv 패키지**
+>
+> gam(formula)
+>
+> -   formula : y\~s(x) (s:분리해서 사용할 예측자)
+
+```{r}
+library(mgcv)
+
+library(MASS) # for data
+data("mcycle")
+
+# 일반화 가법모형
+gam_model <- gam(accel ~ s(times), data=mcycle)
+summary(gam_model)
+
+# 시각화
+plot(gam_model,residuals = T,pch=1,seWithMean = T,shade=T)
+```

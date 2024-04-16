@@ -67,22 +67,28 @@ sum(is.na(airquality$Ozone))
 
 #### 4. 패키지 활용
 
-1.  ~~centralImputation(data) : na를 중앙값으로 대치~~
+-   DMwR 패키지
 
-2.  ~~centralValue(data) : 숫자데이터 -\> na = 중앙값 / 팩터 데이터 -\> na = 최빈값~~
+1.  centralImputation(data) : na를 중앙값으로 대치
 
-3.  ~~knnImputation(data,k) - knn알고리즘 이용하여 na 대치~~
+2.  centralValue(data) : 숫자데이터 -\> na = 중앙값 / 팩터 데이터 -\> na = 최빈값
 
-=\> DMwR 패키지 다운 불가
+3.  knnImputation(data,k) - knn알고리즘 이용하여 na 대치
+
+~~=\> DMwR 패키지 다운 불가~~
 
 ```{r}
-# i. 숫자데이터 -> 중앙값
-data("airquality")
-head(airquality)
-sum(is.na(airquality$Ozone))
+remotes::install_github("cran/DMwR")
+library(DMwR)
 
-airquality[is.na(airquality$Ozone),'Ozone'] <- median(airquality$Ozone, na.rm = T)
-sum(is.na(airquality$Ozone))
+data("airquality")
+air_before <- airquality
+na_idx <- which(is.na(airquality))
+head(air_before[na_idx,])
+
+# i. centralImputation
+air_after <- centralImputation(airquality)
+head(air_after[na_idx,])
 ```
 
 ### 3절. 이상치 인식

@@ -1,0 +1,74 @@
+---
+title: "Part 4. 시각화"
+output: html_document
+---
+
+### 1. 산점도
+
+-   산점도
+
+> plot(x,y, xlab,ylab, main, pch,cex, col, xlim,ylim, type)
+
+-   범례
+
+> legend(x,y, legend)
+
+### 2. 그래프
+
+#### 1. 점 그래프
+
+> points(x,y=NULL,pch,cex,col)
+
+#### 2. 선 그래프
+
+-   꺽은선 그래프
+
+> lines(x, y=NULL, ...)
+
+-   직선 그래프
+
+> abline(a=NULL, b=NULL, h=NULL, v=NULL, coef=NULL, reg=NULL,...)
+
+-   곡선 그래프
+
+> curve(expr, from=NULL, to=NULL,...)
+
+#### 3. 막대 그래프
+
+-   막대그래프
+
+> barplot(height, names.arg, space, horiz, main,xlab,ylab,col, beside, xlim,ylim)
+>
+> -   height : 막대그래프로 그릴 데이터를 저장할 벡터
+>
+> -   names.arg : 막대의 이름을 저장한 벡터
+>
+> -   space : 막대 사이의 간격
+>
+> -   horiz : 막대를 세로로 표현할지에 대한 여부 (TRUE : 세로 / FALSE : 가로)
+>
+> -   beside : 범주가 여러 개일 경우 병렬로 연결된 막대 그래프로 표현할지에 대한 여부 (TRUE : 여러 범주를 병렬로, FALSE : 누적 막대그래프의 형식으로)
+
+#### 4. 히스토그램
+
+-   히스토그램
+
+> hist(x, main,xlab,ylab, breaks, freq, col)
+>
+> -   breaks : 막대의 구간
+>
+> -   freq : 구간별 데이터의 개수(빈도)를 표시할지의 여부 (TRUE : 개수 / FALSE : 확률밀도)
+
+#### 5. 파이차트
+
+-   파이 차트
+
+> pie(x, labels,col,lty,main)
+>
+> -   labels : 파이차트에 각 부분에 해당하는 이름, 반시계방향으로 부여
+
+#### 6. 산점도 행렬
+
+-   산점도 행렬
+
+> pairs(x, labels)

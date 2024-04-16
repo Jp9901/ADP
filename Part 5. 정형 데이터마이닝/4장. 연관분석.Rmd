@@ -80,9 +80,9 @@ mobile_app_use <- c('Yes','Yes','No','Yes')
 
 cust_tel <- cbind(age,rank,mobile_app_use)
 cust_tel <- as.data.frame(cust_tel)
-#cust_tel[,1] <- as.factor(cust_tel[,1])
-#cust_tel[,2] <- as.factor(cust_tel[,2])
-#cust_tel[,3] <- as.factor(cust_tel[,3])
+cust_tel[,1] <- as.factor(cust_tel[,1])
+cust_tel[,2] <- as.factor(cust_tel[,2])
+cust_tel[,3] <- as.factor(cust_tel[,3])
 str(cust_tel)
 
 tran.cust <- as(cust_tel,'transactions')

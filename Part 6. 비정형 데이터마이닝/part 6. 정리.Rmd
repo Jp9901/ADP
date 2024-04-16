@@ -1,0 +1,281 @@
+---
+title: "Part 6. 비정형 데이터마이닝"
+output: html_document
+---
+
+### 1. 텍스트마이닝
+
+#### 1. 데이터 전처리
+
+-   텍스트 데이터 -\> 문서 데이터
+
+> **tm 패키지**
+>
+> VectorSource(text)
+
+-   문서 데이터 -\> Corpus
+
+> **tm 패키지**
+>
+> VCorpus(data)
+>
+> -   data : VectorSource 결과 데이터
+>
+> =\> content인자 : 문서 내용
+
+-   텍스트 전처리
+
+> tm_map(x, FUN)
+>
+> -   x : Corpus 데이터
+>
+> -   FUN : 함수
+>
+>     tolower : 소문자로 변환\
+>     stemDocument : 어근만 남기기\
+>     stripDocument : 공백제거\
+>     removePunctuation : 문장부호제거\
+>     removeNumbers : 숫자제거\
+>     removeWords,'word' : 단어제거\
+>     removeWord,stopwords('word') : 불용어제거\
+>     PlainTextDocument : TextDocument로 변환
+
+-   텍스트 대체
+
+> gsub(pattern, replacement, data)
+>
+> -   pattern : 대체될 텍스트
+>
+>     [[:punct:]] : 특수문자\
+>     [[:digit:]] : 숫자\
+>     [[A-z]] : 알파벳\
+>     [[:alnum:]] : 영문자/숫자
+>
+> -   replacement : 대체될 텍스트
+
+```{r}
+library(tm)
+
+data(crude)
+inspect(crude[1]) # 문서 정보(파일 형태, 글자 수 등)
+crude[[1]]$content # 문서 내용
+
+# 텍스트 전처리
+clean_txt <- function(txt){
+  txt <- tm_map(txt, removeNumbers) # 숫자 제거
+  txt <- tm_map(txt, removePunctuation) # 문장부호 제거(',•,... 은 제외)
+  txt <- tm_map(txt, stripWhitespace) # 공백제거
+  return(txt)
+}
+clean_crude <- clean_txt(crude)
+```
+
+#### 2. 자연어 처리
+
+-   KoNLP 패키지
+
+```{r}
+# 1. multilinguer 패키지
+#install.packages('multilinguer')
+library(multilinguer)
+#multilinguer::install_jdk(force = TRUE)
+
+# 2. rJave 패키지
+#install.packages('rJava')
+library(rJava)
+#rJava::.jinit()
+
+# 3. 의존성 패키지
+#install.packages(c("cli","hash", "tau", "Sejong", "RSQLite", 
+#                   "devtools", "bit", "rex", "lazyeval", 
+#                   "htmlwidgets", "crosstalk", "promises", 
+#                   "later", "sessioninfo", "xopen", "bit64", 
+#                   "blob", "DBI", "memoise", "plogr", "covr", 
+#                   "DT", "rcmdcheck", "rversions"), 
+#                 type = "binary")
+
+
+# 4. github 버전 설치
+#install.packages('remotes')
+#remotes::install_github('haven-jeon/KoNLP', 
+#                        upgrade = "never", 
+#                        INSTALL_opts=c("--no-multiarch"))
+
+# KoNLP 패키지
+library(KoNLP)
+```
+
+-   사전에 단어 추가
+
+> **KoNLP 패키지**
+>
+> buildDictionary(ext_dic, data)
+>
+> -   ext_dic : 단어를 추가하고자 하는 사전 선택('woorimalsam','sejong','insighter')
+>
+> -   data : 추가하고자 하는 단어와 품사의 data.frame or txt파일
+
+-   형태소 분리
+
+> **KoNLP 패키지**
+>
+> SimplePos22(text)
+
+※ 품사 태크
+
+|  **품사**  |                                                       중간 품사                                                        |
+|:--------------:|:------------------------------------------------------:|
+|  S : 기호  | sp:쉼표, sf:마침표, sl:여는 따옴표 및 묶음표, sr:닫는 따옴표 및 묶음표, sd:이음표, se:줄임표, su:단위기호, sy:기타기호 |
+| F : 외국어 |                                                        f:외국어                                                        |
+|  N : 체언  |                               NC:보통명사, NQ:고유명사, NB:의존명사, NP:대명사, NN:수사                                |
+|  P : 용언  |                                            PV:동사, PA:형용사, PX:보조용언                                             |
+| M : 수식언 |                                                   MM:관형사, MA:부사                                                   |
+| I : 독립언 |                                                       II:감탄사                                                        |
+| J : 관계언 |                                          JC:격조사, JX:보조사, JP:서술격조사                                           |
+|  E : 어미  |                                  EP:선어말어미, EC:연결어미, ET:전선어미, EF:종결어미                                  |
+|  X : 접사  |                                                  XP:접두사, XS:접미사                                                  |
+
+-   명사 추출
+
+> **KoNLP 패키지**
+>
+> extraNoun(text)
+
+```{r}
+library(KoNLP)
+useSejongDic()
+
+sentence <- '아버지가 방에 스르륵 들어가신다.'
+
+# 명사추출
+extractNoun(sentence) # '스르륵'은 명사X (부사)
+
+# 사전에 단어 추가
+buildDictionary(ext_dic = 'sejong',
+                user_dic = data.frame(c('스르륵'),c('mag')))
+extractNoun(sentence)
+
+# 형태소 분리
+SimplePos22(sentence)
+```
+
+-   어간 추출
+
+> **tm 패키지**
+>
+> stemDocument(text) : 공통으로 들어가지 않은 부분 제외
+
+> **tm 패키지**
+>
+> stemCompletion(text, dictionary) : 가장 기본적인 어휘로 변경
+>
+> -   text : stemDocument 결과 데이터
+
+```{r}
+library(tm)
+test <- stemDocument(c('analyzed','analyzed','analyzing'))
+completion <- stemCompletion(test, dictionary = c('analyze','analyzed','analyzing'))
+completion
+```
+
+### 2. Term-Document Matrix
+
+#### 1. TermDocument Matrix
+
+-   TDM 구축
+
+TDM : 각 문서와 단어 간의 사용 여부
+
+> **tm 패키지**
+>
+> TermDocumentMatrix(data, control)
+>
+> -   data : Corpus 데이터
+>
+> -   control : 사전 변경, 가중치 부여 등의 옵션 추가
+
+-   연관성 분석
+
+> **tm 패키지**
+>
+> findAssocs(data, terms, corlimit)
+>
+> -   data : TDM 데이터
+>
+> -   terms : 연관성을 확인할 단어
+>
+> -   corlimit : 최소 연관성
+
+```{r}
+library(tm)
+
+# TDM
+TDM_crude <- TermDocumentMatrix(crude)
+dim(TDM_crude) # 단어, 문서 개수
+
+inspect(TDM_crude) # sparsity : 전체 행렬에서 0이 차지하는 비중
+
+# 연관성 분석
+findAssocs(TDM_crude, 'oil',0.7)
+```
+
+#### 2. 시각화
+
+-   wordcloud
+
+> **wordcloud 패키지**
+>
+> wordcloud(words, freq, min.freq, random.order, colors, ...)
+>
+> -   words : 단어
+>
+> -   freq : 단어 빈도
+>
+> -   min.freq : 단어 최소 빈도
+>
+> -   random.order : 단어 배치 랜덤으로 할지 (F=빈도순)
+>
+> -   family="AppleGothic" : 맥북 한글 깨질시
+
+```{r}
+library(wordcloud)
+
+tdm2 <- as.matrix(TDM_crude)
+term.freq <- sort(rowSums(tdm2), decreasing = T)
+
+# 워드 클라우드
+wordcloud(words = names(term.freq), 
+          family="AppleGothic")
+```
+
+### 3. 감성분석
+
+```{r}
+# 감성분석 함수
+sentimental <- function(sentences, positive, negative){
+  scores <- laply(sentences, function(sentence, positive, negative){
+    sentence <- gsub('[[:punct:]]', '', sentence) # 문장부호 제거
+    sentence <- gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
+    sentence <- gsub('\\d+', '', sentence) # 숫자 제거
+    
+    word.list <- str_split(sentence, '\\s+') # 공백 기준으로 단어 생성
+    words <- unlist(word.list)
+    
+    pos.matches <- match(words, positive) # words와 positive 사전과 매칭
+    neg.matches <- match(words, negative)
+    
+    pos_word <- list(word.list[word.list %in% positive])
+    neg_word <- list(word.list[word.list %in% negative])
+    
+    pos.matches <- !is.na (pos.matches)
+    neg.matches <- !is.na (neg.matches)
+    
+    score <- sum(pos.matches) - sum(neg.matches) # 점수=(긍정-부정)
+    
+    return(score)
+  },positive, negative)
+  
+  senti.df <- data.frame(text=sentences, score=scores)
+  return(senti.df)
+}
+```
